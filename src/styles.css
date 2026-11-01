@@ -92,3 +92,115 @@ html[data-theme='dark'] .partner-type-toggle{background:#292432}
 .org-profile-summary h2{margin:0 0 6px;font:750 17px Manrope}
 .org-profile-summary p,.org-detail-description{margin:0;color:var(--muted);font-size:11px;line-height:1.7}
 @media(max-width:700px){.report-modal-content{padding:18px 13px}.report-modal-content .report-layout{grid-template-columns:1fr}.org-profile-head{align-items:flex-start;flex-wrap:wrap}.org-contact-grid{flex-basis:100%}.org-profile-head>.btn{margin-left:0}}
+
+/* Larger, roomier public and account pages. */
+body{font-size:17px}
+.page-shell{width:100%;max-width:none;padding:38px clamp(16px,2.2vw,34px) 60px}
+.section{width:100%;max-width:none;margin:54px 0;padding:0 clamp(16px,2.2vw,34px)}
+.hero{width:100%;max-width:none;margin:18px 0 0;padding:0 clamp(16px,2.2vw,34px)}
+.hero-card{border-radius:20px;min-height:480px}
+.page-intro h1{font-size:clamp(34px,3.3vw,46px)}
+.page-intro p,.section-head p{font-size:16px}
+.kicker{font-size:12px}
+.pets-grid{gap:24px}
+.pet-card{border-radius:20px}
+.pet-photo{height:270px}
+.pet-info{padding:20px}
+.pet-name h3{font-size:23px}
+.pet-meta{font-size:15px}
+.pet-place,.pet-detail-line,.pet-org{font-size:14px}
+.pet-detail-line{padding-top:12px}
+.pet-org-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;border-top:1px solid var(--line)}
+.pet-org-actions .pet-org{margin:0;min-width:0;flex:1}
+.pet-org-actions .pet-actions{flex:none}
+.pet-actions .btn{font-size:13px;padding:10px 13px}
+.filter-panel{position:static;display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px 14px}
+.filter-panel h3,.filter-panel>.text-link{grid-column:1/-1}
+.filter-control{min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--white);font-size:13px}
+.filter-control select{font-size:13px}
+.adopt-layout{grid-template-columns:1fr;gap:14px}
+.directory-intro{grid-template-columns:minmax(350px,.9fr) minmax(0,1.45fr);gap:22px}
+.directory-map .mapbox{height:440px}
+.directory-list .org-card{padding:22px;gap:18px;min-height:250px}
+.org-card .org-logo{height:100px;width:100px;min-width:100px;border-radius:22px;font-size:38px;display:grid;place-items:center}
+.org-detail h3{font-size:21px}
+.org-detail>p,.org-description{font-size:14px!important}
+.org-actions .btn{font-size:12px;padding:10px 13px}
+.pagination{display:flex;justify-content:center;align-items:center;gap:16px;margin:26px 0;font-size:14px}
+.public-case{padding:26px}
+.public-case h2{font-size:25px}
+.public-case>p,.public-case dl{font-size:15px}
+.org-contact-grid b{font-size:14px}
+.animal-details .modal-copy h2{font-size:32px}
+.animal-details .modal-copy p,.animal-details .detail-list{font-size:15px}
+@media(max-width:850px){.directory-intro{grid-template-columns:1fr}.directory-map .mapbox{height:320px}}
+@media(max-width:700px){.pet-photo{height:235px}.pet-org-actions{align-items:flex-start;flex-direction:column}.filter-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.directory-list .org-card{min-height:0}.org-card .org-logo{height:72px;width:72px;min-width:72px;font-size:30px}.pagination{flex-wrap:wrap}}
+
+/* Shared workspace refinements */
+body{font-size:17px}
+.navlinks button{font-size:14px}
+.page-shell,.section,.hero{width:100%;max-width:none}
+.hero{padding-inline:clamp(16px,2.2vw,34px)}
+.hero-card{border-radius:22px}
+.section{padding-inline:clamp(16px,2.2vw,34px)}
+.section-head h2{font-size:34px}
+.section-head p,.page-intro p{font-size:16px}
+.pet-photo{height:270px}
+.pet-info{padding:20px}
+.pet-name h3{font-size:22px}
+.pet-meta,.pet-place{font-size:14px}
+.pet-detail-line{font-size:14px}
+.pet-org-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px;padding-top:13px;border-top:1px solid var(--line)}
+.pet-org-actions .pet-org{margin:0;flex:1;font-size:14px}
+.pet-org-actions .pet-actions{margin:0;display:flex;gap:8px}
+.pet-org-actions .btn{white-space:nowrap;padding:10px 14px}
+.filter-panel{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 12px}
+.filter-panel h3,.filter-panel>.text-link{grid-column:1/-1}
+.filter-control{font-size:14px}
+.filter-control select{font-size:14px}
+.directory-map .mapbox{height:500px}
+.org-card{align-items:flex-start}
+.org-card .org-logo img,.org-logo img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.org-detail{min-width:0;flex:1}
+.directory-list .org-card{min-height:270px}
+.org-profile-cover{height:270px;background-size:cover;background-position:center;border-radius:16px}
+.org-profile-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:22px 0}
+.org-profile-head .org-logo.large{height:128px;width:128px;min-width:128px;margin-top:-62px;border:5px solid #fff;position:relative}
+.org-profile-summary{min-width:180px;flex:1}
+.org-profile-head .org-contact-grid{flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.org-contact-grid small,.org-contact-grid b{display:block}
+.org-contact-grid small{color:var(--muted);font-size:12px;margin-bottom:5px}
+.org-contact-grid b{font-size:16px;overflow-wrap:anywhere}
+.org-profile-layout>.content-panel>h3{font-size:22px}
+.org-detail-description{font-size:16px;line-height:1.75}
+.public-case{font-size:16px}
+.public-case dl{display:grid;grid-template-columns:110px 1fr;gap:8px 12px}
+.public-case dt{color:var(--muted)}
+.public-case dd{margin:0}
+.public-report-photo{width:100%;max-height:420px;object-fit:cover;border-radius:14px;margin:4px 0 18px}
+.report-photo{max-height:500px}
+.report-detail-modal .detail-list{font-size:15px}
+.account-alert{display:flex;align-items:flex-start;gap:14px;padding:17px 20px;margin:0 0 18px;background:#fff8e9;border:1px solid #ecdba8;border-radius:15px;box-shadow:var(--shadow)}
+.account-alert>div{flex:1}
+.account-alert p{margin:5px 0;color:var(--ink);line-height:1.5}
+.account-alert small{color:var(--muted)}
+.alert-icon{color:#bd811f;font-size:21px;line-height:1}
+.notification-button{position:relative;border:1px solid var(--line);background:var(--white);border-radius:20px;padding:7px 11px;font-size:14px}
+.notification-button span{display:inline-grid;place-items:center;min-width:19px;height:19px;margin-left:3px;border-radius:12px;background:#c74e52;color:#fff;font-size:11px;font-weight:800}
+.message-page-intro{display:none}
+.directory-editor-head{display:flex;align-items:center;gap:14px;margin-bottom:17px}
+.directory-editor-head h3{margin:0 0 4px}
+.directory-editor-head small{color:var(--muted)}
+.auth-modal .auth-shell{min-height:0;padding:14px;background:transparent}
+.auth-modal .auth-brand{display:none}
+.auth-modal .auth-card{width:min(500px,100%);padding:30px;border:0;box-shadow:none}
+.auth-modal .demo-note{font-size:11px!important}
+.settings-list>.page-intro{padding:5px 0 20px}
+[data-theme="dark"]{--ink:#edf0eb;--muted:#adb8af;--paper:#191d1a;--white:#242a25;--line:#3a423b;--mint:#2c3b30;--green:#70b987;--green2:#8fcea2;--shadow:0 12px 32px #0004;color:var(--ink);background:var(--paper)}
+[data-theme="dark"] body,[data-theme="dark"] .page-shell,[data-theme="dark"] .dashboard-shell{background:var(--paper);color:var(--ink)}
+[data-theme="dark"] .content-panel,[data-theme="dark"] .panel,[data-theme="dark"] .pet-card,[data-theme="dark"] .org-card,[data-theme="dark"] .modal,[data-theme="dark"] .nav,[data-theme="dark"] .staff-sidebar{background:#242a25;color:var(--ink);border-color:var(--line)}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:#1d231e;color:var(--ink);border-color:var(--line)}
+[data-font-size="small"] body{font-size:15px}
+[data-font-size="large"] body{font-size:19px}
+@media(max-width:850px){.org-profile-head .org-contact-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.directory-map .mapbox{height:380px}}
+@media(max-width:700px){.pet-photo{height:240px}.pet-org-actions{align-items:flex-start;flex-direction:column}.pet-org-actions .pet-actions{width:100%}.pet-org-actions .pet-actions .btn{flex:1}.directory-map .mapbox{height:290px}.org-profile-head .org-contact-grid{grid-template-columns:1fr}.org-profile-cover{height:190px}.org-profile-head .org-logo.large{height:92px;width:92px;min-width:92px;margin-top:-48px}.auth-modal .auth-card{padding:24px 18px}.account-alert{padding:14px;flex-wrap:wrap}}
