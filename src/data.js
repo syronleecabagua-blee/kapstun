@@ -1,22 +1,224 @@
 export const organizations = [
- {id:'org-1',name:'Iloilo Animal Care Network',category:'Rescue organization',icon:'🐾',place:'Jaro, Iloilo City',address:'Jaro, Iloilo City, Philippines',phone:'+63 917 555 0142',email:'hello@iloiloanimalcare.org',description:'Community rescue support and adoption connections for animals across Iloilo.',services:['Rescue support','Adoption','Animal welfare']},
- {id:'org-2',name:'Paws & Whiskers Rescue',category:'Rescue organization',icon:'🐈',place:'Mandurriao, Iloilo City',address:'Mandurriao, Iloilo City, Philippines',phone:'+63 905 321 8080',email:'paws.whiskers@example.org',description:'Foster care and adoption support, with a focus on cats and kittens.',services:['Cat rescue','Foster care','Adoption']},
- {id:'org-3',name:'Hope Haven Animal Center',category:'Animal shelter',icon:'🏠',place:'Oton, Iloilo',address:'Oton, Iloilo, Philippines',phone:'+63 998 203 1165',email:'hopehaven@example.org',description:'A local shelter helping lost, abandoned, and adoptable animals.',services:['Shelter','Lost & found','Adoption']},
- {id:'org-4',name:'City Veterinary Services',category:'Public service',icon:'✚',place:'Iloilo City Proper',address:'Iloilo City Proper, Philippines',phone:'+63 33 337 1111',email:'cityvet@example.gov.ph',description:'Public veterinary referrals and animal welfare services.',services:['Veterinary referral','Public service']},
-]
+    {
+        id: "org-1",
+        name: "Iloilo Animal Care Network",
+        category: "Rescue organization",
+        icon: "🐾",
+        place: "Jaro, Iloilo City",
+        address: "Jaro, Iloilo City, Philippines",
+        phone: "+63 917 555 0142",
+        email: "hello@iloiloanimalcare.org",
+        description:
+            "Community rescue support and adoption connections for animals across Iloilo.",
+        services: ["Rescue support", "Adoption", "Animal welfare"],
+    },
+    {
+        id: "org-2",
+        name: "Paws & Whiskers Rescue",
+        category: "Rescue organization",
+        icon: "🐈",
+        place: "Mandurriao, Iloilo City",
+        address: "Mandurriao, Iloilo City, Philippines",
+        phone: "+63 905 321 8080",
+        email: "paws.whiskers@example.org",
+        description:
+            "Foster care and adoption support, with a focus on cats and kittens.",
+        services: ["Cat rescue", "Foster care", "Adoption"],
+    },
+    {
+        id: "org-3",
+        name: "Hope Haven Animal Center",
+        category: "Animal shelter",
+        icon: "🏠",
+        place: "Oton, Iloilo",
+        address: "Oton, Iloilo, Philippines",
+        phone: "+63 998 203 1165",
+        email: "hopehaven@example.org",
+        description:
+            "A local shelter helping lost, abandoned, and adoptable animals.",
+        services: ["Shelter", "Lost & found", "Adoption"],
+    },
+    {
+        id: "org-4",
+        name: "City Veterinary Services",
+        category: "Public service",
+        icon: "✚",
+        place: "Iloilo City Proper",
+        address: "Iloilo City Proper, Philippines",
+        phone: "+63 33 337 1111",
+        email: "cityvet@example.gov.ph",
+        description: "Public veterinary referrals and animal welfare services.",
+        services: ["Veterinary referral", "Public service"],
+    },
+];
 export const initialPets = [
- {id:'pet-1',name:'Milo',kind:'Dog',breed:'Aspin mix',age:'2 years',gender:'Male',condition:'Healthy',status:'Available',place:'Jaro, Iloilo City',orgId:'org-1',image:'photo-1552053831-71594a27632d',tag:'Ready for a family',description:'A sunny, gentle boy who loves a slow morning walk and a good belly rub. Milo is looking for a patient family to call his own.'},
- {id:'pet-2',name:'Luna',kind:'Cat',breed:'Domestic shorthair',age:'8 months',gender:'Female',condition:'Healthy',status:'Available',place:'Mandurriao, Iloilo City',orgId:'org-2',image:'photo-1514888286974-6c03e2ca1dba',tag:'Meet me',description:'Curious and wonderfully affectionate, Luna likes sunny windows and being close to her people.'},
- {id:'pet-3',name:'Bantay',kind:'Dog',breed:'Aspin',age:'5 years',gender:'Male',condition:'Recovering',status:'Available',place:'Oton, Iloilo',orgId:'org-3',image:'photo-1543466835-00a7907e9de1',tag:'Gentle soul',description:'A calm companion with kind eyes, hoping for a quiet home and someone to spend his afternoons with.'},
- {id:'pet-4',name:'Pippa',kind:'Cat',breed:'Calico mix',age:'1 year',gender:'Female',condition:'Healthy',status:'Available',place:'Pavia, Iloilo',orgId:'org-2',image:'photo-1573865526739-10659fec78a5',tag:'Playful',description:'Playful, clever and ready for her next adventure. Pippa would love a home with space to explore.'},
- {id:'pet-5',name:'Toby',kind:'Dog',breed:'Terrier mix',age:'4 years',gender:'Male',condition:'Healthy',status:'Available',place:'Iloilo City',orgId:'org-1',image:'photo-1517849845537-4d257902454a',tag:'Available',description:'A loyal little shadow with a big heart, waiting for a person to share everyday life with.'},
- {id:'pet-6',name:'Muning',kind:'Cat',breed:'Domestic shorthair',age:'3 years',gender:'Female',condition:'Needs attention',status:'Available',place:'Leganes, Iloilo',orgId:'org-3',image:'photo-1533738363-b7f9aef128ce',tag:'Available',description:'A sweet, easygoing cat who enjoys naps near the window and gentle company.'},
-]
+    {
+        id: "pet-1",
+        name: "Milo",
+        kind: "Dog",
+        breed: "Aspin mix",
+        age: "2 years",
+        gender: "Male",
+        size: "Medium",
+        condition: "Healthy",
+        status: "Available",
+        place: "Jaro, Iloilo City",
+        orgId: "org-1",
+        image: "photo-1552053831-71594a27632d",
+        tag: "Ready for a family",
+        description:
+            "A sunny, gentle boy who loves a slow morning walk and a good belly rub. Milo is looking for a patient family to call his own.",
+    },
+    {
+        id: "pet-2",
+        name: "Luna",
+        kind: "Cat",
+        breed: "Domestic shorthair",
+        age: "8 months",
+        gender: "Female",
+        size: "Small",
+        condition: "Healthy",
+        status: "Available",
+        place: "Mandurriao, Iloilo City",
+        orgId: "org-2",
+        image: "photo-1514888286974-6c03e2ca1dba",
+        tag: "Meet me",
+        description:
+            "Curious and wonderfully affectionate, Luna likes sunny windows and being close to her people.",
+    },
+    {
+        id: "pet-3",
+        name: "Bantay",
+        kind: "Dog",
+        breed: "Aspin",
+        age: "5 years",
+        gender: "Male",
+        size: "Large",
+        condition: "Recovering",
+        status: "Available",
+        place: "Oton, Iloilo",
+        orgId: "org-3",
+        image: "photo-1543466835-00a7907e9de1",
+        tag: "Gentle soul",
+        description:
+            "A calm companion with kind eyes, hoping for a quiet home and someone to spend his afternoons with.",
+    },
+    {
+        id: "pet-4",
+        name: "Pippa",
+        kind: "Cat",
+        breed: "Calico mix",
+        age: "1 year",
+        gender: "Female",
+        size: "Small",
+        condition: "Healthy",
+        status: "Available",
+        place: "Pavia, Iloilo",
+        orgId: "org-2",
+        image: "photo-1573865526739-10659fec78a5",
+        tag: "Playful",
+        description:
+            "Playful, clever and ready for her next adventure. Pippa would love a home with space to explore.",
+    },
+    {
+        id: "pet-5",
+        name: "Toby",
+        kind: "Dog",
+        breed: "Terrier mix",
+        age: "4 years",
+        gender: "Male",
+        size: "Small",
+        condition: "Healthy",
+        status: "Available",
+        place: "Iloilo City",
+        orgId: "org-1",
+        image: "photo-1517849845537-4d257902454a",
+        tag: "Available",
+        description:
+            "A loyal little shadow with a big heart, waiting for a person to share everyday life with.",
+    },
+    {
+        id: "pet-6",
+        name: "Muning",
+        kind: "Cat",
+        breed: "Domestic shorthair",
+        age: "3 years",
+        gender: "Female",
+        size: "Small",
+        condition: "Needs attention",
+        status: "Available",
+        place: "Leganes, Iloilo",
+        orgId: "org-3",
+        image: "photo-1533738363-b7f9aef128ce",
+        tag: "Available",
+        description:
+            "A sweet, easygoing cat who enjoys naps near the window and gentle company.",
+    },
+];
 export const initialReports = [
- {id:'PR-1042',kind:'Injured animal',animalType:'Dog',breed:'Aspin mix',condition:'Injured',description:'Found near Jaro Plaza. Wearing a red collar.',place:'Jaro, Iloilo City',lat:10.7202,lng:122.5621,date:'Today · 9:42 AM',status:'Responding',tone:'blue',userId:'user-1',orgId:'org-1',image:null},
- {id:'PR-1018',kind:'Found pet',animalType:'Cat',breed:'Unknown',condition:'Needs attention',description:'Small cat near the market.',place:'Mandurriao, Iloilo City',lat:10.704,lng:122.545,date:'Oct 27 · 2:18 PM',status:'Pending',tone:'amber',userId:'user-1',orgId:'org-2',image:null},
- {id:'PR-0981',kind:'Lost pet',animalType:'Dog',breed:'Brown mix',condition:'Unknown',description:'Lost brown dog, last seen near the park.',place:'La Paz, Iloilo City',lat:10.712,lng:122.57,date:'Oct 24 · 11:05 AM',status:'Completed',tone:'green',userId:'user-1',orgId:'org-1',image:null},
-]
-export const readStore = (key, fallback) => { try { const v=localStorage.getItem(`pawrescue:${key}`); return v ? JSON.parse(v) : fallback } catch { return fallback } }
-export const writeStore = (key,value) => localStorage.setItem(`pawrescue:${key}`,JSON.stringify(value))
-export const photoUrl = (photo,w=760) => photo?.startsWith('data:') ? photo : `https://images.unsplash.com/${photo}?auto=format&fit=crop&w=${w}&q=85`
+    {
+        id: "PR-1042",
+        kind: "Injured animal",
+        animalType: "Dog",
+        breed: "Aspin mix",
+        condition: "Injured",
+        description: "Found near Jaro Plaza. Wearing a red collar.",
+        place: "Jaro, Iloilo City",
+        lat: 10.7202,
+        lng: 122.5621,
+        date: "Today · 9:42 AM",
+        status: "Responding",
+        tone: "blue",
+        userId: "user-1",
+        orgId: "org-1",
+        image: null,
+    },
+    {
+        id: "PR-1018",
+        kind: "Found pet",
+        animalType: "Cat",
+        breed: "Unknown",
+        condition: "Needs attention",
+        description: "Small cat near the market.",
+        place: "Mandurriao, Iloilo City",
+        lat: 10.704,
+        lng: 122.545,
+        date: "Oct 27 · 2:18 PM",
+        status: "Pending",
+        tone: "amber",
+        userId: "user-1",
+        orgId: "org-2",
+        image: null,
+    },
+    {
+        id: "PR-0981",
+        kind: "Lost pet",
+        animalType: "Dog",
+        breed: "Brown mix",
+        condition: "Unknown",
+        description: "Lost brown dog, last seen near the park.",
+        place: "La Paz, Iloilo City",
+        lat: 10.712,
+        lng: 122.57,
+        date: "Oct 24 · 11:05 AM",
+        status: "Completed",
+        tone: "green",
+        userId: "user-1",
+        orgId: "org-1",
+        image: null,
+    },
+];
+export const readStore = (key, fallback) => {
+    try {
+        const v = localStorage.getItem(`pawrescue:${key}`);
+        return v ? JSON.parse(v) : fallback;
+    } catch {
+        return fallback;
+    }
+};
+export const writeStore = (key, value) =>
+    localStorage.setItem(`pawrescue:${key}`, JSON.stringify(value));
+export const photoUrl = (photo, w = 760) =>
+    photo?.startsWith("data:")
+        ? photo
+        : `https://images.unsplash.com/${photo}?auto=format&fit=crop&w=${w}&q=85`;

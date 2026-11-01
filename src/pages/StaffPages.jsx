@@ -1,43 +1,1700 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Plus, Search, Trash2 } from 'lucide-react'
-import { EmptyState, Field, LocationPicker, PageIntro, PhotoUpload, StatusBadge } from '../components/Controls'
-import { organizations, photoUrl, readStore, writeStore } from '../data'
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, LogOut, Plus, Search, Trash2 } from "lucide-react";
+import {
+    EmptyState,
+    Field,
+    LocationPicker,
+    PageIntro,
+    PhotoUpload,
+    StatusBadge,
+} from "../components/Controls";
+import { organizations, photoUrl, readStore, writeStore } from "../data";
 
-export function OrganizationDashboard({page,setPage,organizations:allOrganizations=organizations,reports,pets,inquiries,messages,messagesView,users=[],alerts=[],onDismissAlert,settings,onStatus,onReportDecision,onViewReport,onViewAnimal,onListing,onInquiry,onViewInquiry,onMessageApplicant,onNavigate,onSaveOrg,onSaveSettings,onLogout,orgId}){
- const org=allOrganizations.find(o=>o.id===orgId)||allOrganizations[0],ownPets=pets.filter(p=>p.orgId===org.id),visibleReports=reports.filter(r=>r.status!=='Cancelled'&&!(r.declinedBy||[]).includes(org.id)),ownReports=visibleReports.filter(r=>r.orgId===org.id),ownInquiries=inquiries.filter(i=>i.orgId===org.id)
- const nav=['Overview','Reports','Adoption Listings','Adoption Inquiries','Messages','Profile','Settings']
- return <div className="staff-layout organization-layout"><aside className="staff-sidebar"><div className="staff-org"><span className="org-logo">{org.icon||'🐾'}</span><b>{org.name}</b><small>Organization workspace</small></div>{nav.map(item=><button key={item} className={page===item?'selected':''} onClick={()=>setPage(item)}>{item}</button>)}<button className="staff-logout" onClick={onLogout}>Log out</button></aside><main className="dashboard-shell"><PageIntro className={page==='Messages'?'message-page-intro':''} eyebrow="Organization workspace" title={page==='Profile'?'Organization Profile':page} text="Manage your shelter's reports, adoption listings, inquiries, and conversations." action={page==='Adoption Listings'&&<button className="btn btn-primary" onClick={()=>onListing(null)}>＋ New listing</button>}/>{alerts.filter(a=>!a.read).map(alert=><article className="account-alert" key={alert.id}><span className="alert-icon">●</span><div><b>{alert.title}</b><p>{alert.message}</p><small>{alert.date}</small></div><button className="table-action" onClick={()=>onDismissAlert?.(alert.id)}>Mark read</button></article>)}
- {page==='Overview'&&<><div className="dash-stats">{[[ownReports.length,'Assigned reports','Cases with your organization'],[visibleReports.length,'Available reports','Cases you can accept'],[ownPets.length,'Adoption listings','Owned by your organization'],[ownInquiries.filter(i=>i.status==='Pending').length,'Pending inquiries','Awaiting review']].map(([n,l,s])=><article className="stat" key={l}><div className="stat-label">{l}</div><div className="stat-num">{n}</div><div className="stat-note">{s}</div></article>)}</div><div className="dash-grid"><section className="activity"><div className="box-head"><h2>Recent reports</h2><button className="text-link" onClick={()=>setPage('Reports')}>Manage reports →</button></div>{visibleReports.slice(0,4).map(r=><div className="activity-row" key={r.id}><span className="dot"/><span>{r.kind}<small>{r.id} · {r.place}</small></span><StatusBadge status={r.status}/></div>)}</section><section className="quick"><div className="box-head"><h2>Quick actions</h2></div><div className="quick-grid">{[['📋','Review reports','Reports'],['🐾','Manage listings','Adoption Listings'],['♡','Review inquiries','Adoption Inquiries'],['✉','Open messages','Messages']].map(([i,t,p])=><button className="quick-btn" key={p} onClick={()=>setPage(p)}><span>{i}</span>{t}<ArrowRight size={14}/></button>)}</div></section></div></>}
- {page==='Reports'&&(visibleReports.length?<div className="content-panel"><div className="reports-summary"><b>{ownReports.length} reports assigned to your organization</b><span>{visibleReports.filter(r=>!r.orgId).length} reports are still available to accept</span></div><div className="table-wrap"><table><thead><tr><th>REPORT</th><th>ANIMAL / CONDITION</th><th>LOCATION</th><th>SUBMITTED BY</th><th>STATUS</th><th>ORGANIZATION</th><th>ACTIONS</th></tr></thead><tbody>{visibleReports.map(r=>{const assigned=r.orgId===org.id;const assignedOrg=allOrganizations.find(x=>x.id===r.orgId);return <tr key={r.id}><td><b>{r.id}</b><small>{r.kind}</small></td><td>{r.animalType} · {r.breed||'Unknown'}<small>{r.condition}</small></td><td>{r.place}</td><td>{users?.find(u=>u.id===r.userId)?.name||'Resident'}</td><td><StatusBadge status={r.status}/></td><td>{assigned?'Your organization':assignedOrg?.name||'Available'}</td><td><div className="admin-actions"><button className="table-action" onClick={()=>onViewReport(r)}>View Details</button>{!r.orgId&&<button className="table-action" onClick={()=>onReportDecision(r.id,'accept')}>Take report</button>}{assigned&&r.status!=='Cancelled'&&<><select aria-label={`Update ${r.id} status`} value={r.status} onChange={e=>onStatus(r.id,e.target.value)}><option>Pending</option><option value="Responding">Responding to a report</option><option>Rescued</option><option>Completed</option></select><button className="table-action reject-action" onClick={()=>onReportDecision(r.id,'reject')}>Return to queue</button><button className="table-action reject-action" onClick={()=>onReportDecision(r.id,'cancel')}>Cancel</button></>}</div></td></tr>})}</tbody></table></div><p className="form-disclaimer">Returning a report makes it available to other organizations. Status updates describe the recorded response progress.</p></div>:<EmptyState title="No reports available" text="Assigned and open community reports will appear here."/>)} {page==='Adoption Listings'&&<div className="pets-grid">{ownPets.map(p=><article className="pet-card" key={p.id}><div className="pet-photo" style={{backgroundImage:`url(${photoUrl(p.image,700)})`}}/><div className="pet-info"><h3>{p.name}</h3><p className="pet-meta">{p.kind} · {p.breed} · {p.age} · {p.gender}</p><div className="pet-org">{p.condition} · {p.status}</div><div className="pet-actions"><button className="btn btn-ghost" onClick={()=>onViewAnimal(p)}>View details</button><button className="btn btn-soft" onClick={()=>onListing(p)}>Edit listing</button><button className="btn btn-ghost" onClick={()=>onListing({...p,remove:true})}><Trash2 size={14}/> Delete</button></div></div></article>)}{!ownPets.length&&<EmptyState title="No listings yet" text="Create an adoption listing for your organization."/>}</div>}
- {page==='Adoption Inquiries'&&(ownInquiries.length?<div className="content-panel"><div className="table-wrap"><table><thead><tr><th>APPLICANT</th><th>ANIMAL</th><th>CONTACT</th><th>DATE</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody>{ownInquiries.map(i=><tr key={i.id}><td><b>{i.name}</b><small>Age {i.age} · {i.address}</small></td><td>{i.petName}</td><td>{i.email}<small>{i.phone}</small></td><td>{i.date}</td><td><StatusBadge status={i.status}/></td><td><div className="admin-actions"><button className="table-action" onClick={()=>onViewInquiry(i)}>View details</button><button className="table-action" onClick={()=>onMessageApplicant(i)}>Quick message</button><select aria-label={`Update ${i.name}'s inquiry`} value={i.status} onChange={e=>onInquiry(i.id,e.target.value)}><option>Pending</option><option>In review</option><option>Contacted</option><option>Closed</option></select></div></td></tr>)}</tbody></table></div></div>:<EmptyState title="No inquiries yet" text="Adoption inquiries for your listings will appear here."/>)}
- {page==='Messages'&&(messagesView||<div className="content-panel"><h3>Organization conversations</h3><p className="form-disclaimer">Open a conversation from an animal listing, report, or inquiry. Messaging is a local demonstration in this frontend.</p></div>)}
- {page==='Profile'&&<OrgProfile org={org} onSave={onSaveOrg}/>}
- {page==='Settings'&&<OrgSettings org={org} settings={settings} onSave={onSaveSettings}/>}
- </main></div>
+export function OrganizationDashboard({
+    page,
+    setPage,
+    organizations: allOrganizations = organizations,
+    reports,
+    pets,
+    inquiries,
+    messages,
+    messagesView,
+    users = [],
+    alerts = [],
+    onDismissAlert,
+    settings,
+    onStatus,
+    onReportDecision,
+    onViewReport,
+    onViewAnimal,
+    onListing,
+    onInquiry,
+    onViewInquiry,
+    onMessageApplicant,
+    onNavigate,
+    onSaveOrg,
+    onSaveSettings,
+    onLogout,
+    orgId,
+}) {
+    const org =
+            allOrganizations.find((o) => o.id === orgId) || allOrganizations[0],
+        ownPets = pets.filter((p) => p.orgId === org.id),
+        visibleReports = reports.filter(
+            (r) =>
+                r.status !== "Cancelled" &&
+                !(r.declinedBy || []).includes(org.id),
+        ),
+        ownReports = visibleReports.filter((r) => r.orgId === org.id),
+        availableReports = visibleReports.filter((r) => !r.orgId),
+        ownInquiries = inquiries.filter((i) => i.orgId === org.id);
+    const nav = [
+        "Overview",
+        "Reports",
+        "Adoption Listings",
+        "Adoption Inquiries",
+        "Messages",
+        "Profile",
+        "Settings",
+    ];
+    return (
+        <div className="staff-layout organization-layout">
+            <aside className="staff-sidebar">
+                <div className="staff-org">
+                    <span className="org-logo">{org.icon || "🐾"}</span>
+                    <b>{org.name}</b>
+                    <small>Organization workspace</small>
+                </div>
+                {nav.map((item) => (
+                    <button
+                        key={item}
+                        className={page === item ? "selected" : ""}
+                        onClick={() => setPage(item)}
+                    >
+                        {item}
+                    </button>
+                ))}
+                <button className="staff-logout" onClick={onLogout}>
+                    <LogOut size={17} /> Log out
+                </button>
+            </aside>
+            <main className="dashboard-shell">
+                <PageIntro
+                    className={page === "Messages" ? "message-page-intro" : ""}
+                    eyebrow="Organization workspace"
+                    title={page === "Profile" ? "Organization Profile" : page}
+                    text="Manage your shelter's reports, adoption listings, inquiries, and conversations."
+                    action={
+                        page === "Adoption Listings" && (
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => onListing(null)}
+                            >
+                                ＋ New listing
+                            </button>
+                        )
+                    }
+                />
+                {alerts
+                    .filter((a) => !a.read)
+                    .map((alert) => (
+                        <article className="account-alert" key={alert.id}>
+                            <span className="alert-icon">●</span>
+                            <div>
+                                <b>{alert.title}</b>
+                                <p>{alert.message}</p>
+                                <small>{alert.date}</small>
+                            </div>
+                            <button
+                                className="table-action"
+                                onClick={() => onDismissAlert?.(alert.id)}
+                            >
+                                Mark read
+                            </button>
+                        </article>
+                    ))}
+                {page === "Overview" && (
+                    <>
+                        <div className="dash-stats">
+                            {[
+                                [
+                                    ownReports.length,
+                                    "Assigned reports",
+                                    "Cases with your organization",
+                                ],
+                                [
+                                    availableReports.length,
+                                    "Available reports",
+                                    "Cases you can accept",
+                                ],
+                                [
+                                    ownPets.length,
+                                    "Adoption listings",
+                                    "Owned by your organization",
+                                ],
+                                [
+                                    ownInquiries.filter(
+                                        (i) => i.status === "Pending",
+                                    ).length,
+                                    "Pending inquiries",
+                                    "Awaiting review",
+                                ],
+                            ].map(([n, l, s]) => (
+                                <article className="stat" key={l}>
+                                    <div className="stat-label">{l}</div>
+                                    <div className="stat-num">{n}</div>
+                                    <div className="stat-note">{s}</div>
+                                </article>
+                            ))}
+                        </div>
+                        <div className="dash-grid">
+                            <section className="activity">
+                                <div className="box-head">
+                                    <h2>Recent reports</h2>
+                                    <button
+                                        className="text-link"
+                                        onClick={() => setPage("Reports")}
+                                    >
+                                        Manage reports →
+                                    </button>
+                                </div>
+                                {visibleReports.slice(0, 4).map((r) => (
+                                    <div className="activity-row" key={r.id}>
+                                        <span className="dot" />
+                                        <span>
+                                            {r.kind}
+                                            <small>
+                                                {r.id} · {r.place}
+                                            </small>
+                                        </span>
+                                        <StatusBadge status={r.status} />
+                                    </div>
+                                ))}
+                            </section>
+                            <section className="quick">
+                                <div className="box-head">
+                                    <h2>Quick actions</h2>
+                                </div>
+                                <div className="quick-grid">
+                                    {[
+                                        ["📋", "Review reports", "Reports"],
+                                        [
+                                            "🐾",
+                                            "Manage listings",
+                                            "Adoption Listings",
+                                        ],
+                                        [
+                                            "♡",
+                                            "Review inquiries",
+                                            "Adoption Inquiries",
+                                        ],
+                                        ["✉", "Open messages", "Messages"],
+                                    ].map(([i, t, p]) => (
+                                        <button
+                                            className="quick-btn"
+                                            key={p}
+                                            onClick={() => setPage(p)}
+                                        >
+                                            <span>{i}</span>
+                                            {t}
+                                            <ArrowRight size={14} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                    </>
+                )}
+                {page === "Reports" &&
+                    (visibleReports.length ? (
+                        <div className="content-panel">
+                            <div className="reports-summary">
+                                <b>
+                                    {ownReports.length} reports assigned to your
+                                    organization
+                                </b>
+                                <span>
+                                    {
+                                        visibleReports.filter((r) => !r.orgId)
+                                            .length
+                                    }{" "}
+                                    reports are still available to accept
+                                </span>
+                            </div>
+                            <div className="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>REPORT</th>
+                                            <th>ANIMAL / CONDITION</th>
+                                            <th>LOCATION</th>
+                                            <th>SUBMITTED BY</th>
+                                            <th>STATUS</th>
+                                            <th>ORGANIZATION</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {visibleReports.map((r) => {
+                                            const assigned = r.orgId === org.id;
+                                            const assignedOrg =
+                                                allOrganizations.find(
+                                                    (x) => x.id === r.orgId,
+                                                );
+                                            return (
+                                                <tr key={r.id}>
+                                                    <td>
+                                                        <b>{r.id}</b>
+                                                        <small>{r.kind}</small>
+                                                    </td>
+                                                    <td>
+                                                        {r.animalType} ·{" "}
+                                                        {r.breed || "Unknown"}
+                                                        <small>
+                                                            {r.condition}
+                                                        </small>
+                                                    </td>
+                                                    <td>{r.place}</td>
+                                                    <td>
+                                                        {users?.find(
+                                                            (u) =>
+                                                                u.id ===
+                                                                r.userId,
+                                                        )?.name || "Resident"}
+                                                    </td>
+                                                    <td>
+                                                        <StatusBadge
+                                                            status={r.status}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        {assigned
+                                                            ? "Your organization"
+                                                            : assignedOrg?.name ||
+                                                              "Available"}
+                                                    </td>
+                                                    <td>
+                                                        <div className="admin-actions">
+                                                            <button
+                                                                className="table-action"
+                                                                onClick={() =>
+                                                                    onViewReport(
+                                                                        r,
+                                                                    )
+                                                                }
+                                                            >
+                                                                View Details
+                                                            </button>
+                                                            {!r.orgId && (
+                                                                <button
+                                                                    className="table-action"
+                                                                    onClick={() =>
+                                                                        onReportDecision(
+                                                                            r.id,
+                                                                            "accept",
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Take report
+                                                                </button>
+                                                            )}
+                                                            {assigned &&
+                                                                r.status !==
+                                                                    "Cancelled" && (
+                                                                    <>
+                                                                        <select
+                                                                            aria-label={`Update ${r.id} status`}
+                                                                            value={
+                                                                                r.status
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                onStatus(
+                                                                                    r.id,
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <option>
+                                                                                Pending
+                                                                            </option>
+                                                                            <option value="Responding">
+                                                                                Responding
+                                                                                to
+                                                                                a
+                                                                                report
+                                                                            </option>
+                                                                            <option>
+                                                                                Rescued
+                                                                            </option>
+                                                                            <option>
+                                                                                Completed
+                                                                            </option>
+                                                                        </select>
+                                                                        <button
+                                                                            className="table-action reject-action"
+                                                                            onClick={() =>
+                                                                                onReportDecision(
+                                                                                    r.id,
+                                                                                    "reject",
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            Return
+                                                                            to
+                                                                            queue
+                                                                        </button>
+                                                                        <button
+                                                                            className="table-action reject-action"
+                                                                            onClick={() =>
+                                                                                onReportDecision(
+                                                                                    r.id,
+                                                                                    "cancel",
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className="form-disclaimer">
+                                Returning a report makes it available to other
+                                organizations. Status updates describe the
+                                recorded response progress.
+                            </p>
+                        </div>
+                    ) : (
+                        <EmptyState
+                            title="No reports available"
+                            text="Assigned and open community reports will appear here."
+                        />
+                    ))}{" "}
+                {page === "Adoption Listings" && (
+                    <div className="pets-grid">
+                        {ownPets.map((p) => (
+                            <article className="pet-card" key={p.id}>
+                                <div
+                                    className="pet-photo"
+                                    style={{
+                                        backgroundImage: `url(${photoUrl(p.image, 700)})`,
+                                    }}
+                                />
+                                <div className="pet-info">
+                                    <h3>{p.name}</h3>
+                                    <p className="pet-meta">
+                                        {p.kind} · {p.breed} · {p.age} ·{" "}
+                                        {p.gender}
+                                    </p>
+                                    <div className="pet-org">
+                                        {p.condition} · {p.status}
+                                    </div>
+                                    <div className="pet-actions">
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={() => onViewAnimal(p)}
+                                        >
+                                            View details
+                                        </button>
+                                        <button
+                                            className="btn btn-soft"
+                                            onClick={() => onListing(p)}
+                                        >
+                                            Edit listing
+                                        </button>
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={() =>
+                                                onListing({
+                                                    ...p,
+                                                    remove: true,
+                                                })
+                                            }
+                                        >
+                                            <Trash2 size={14} /> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                        {!ownPets.length && (
+                            <EmptyState
+                                title="No listings yet"
+                                text="Create an adoption listing for your organization."
+                            />
+                        )}
+                    </div>
+                )}
+                {page === "Adoption Inquiries" &&
+                    (ownInquiries.length ? (
+                        <div className="content-panel">
+                            <div className="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>APPLICANT</th>
+                                            <th>ANIMAL</th>
+                                            <th>CONTACT</th>
+                                            <th>DATE</th>
+                                            <th>STATUS</th>
+                                            <th>ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {ownInquiries.map((i) => (
+                                            <tr key={i.id}>
+                                                <td>
+                                                    <b>{i.name}</b>
+                                                    <small>
+                                                        Age {i.age} ·{" "}
+                                                        {i.address}
+                                                    </small>
+                                                </td>
+                                                <td>{i.petName}</td>
+                                                <td>
+                                                    {i.email}
+                                                    <small>{i.phone}</small>
+                                                </td>
+                                                <td>{i.date}</td>
+                                                <td>
+                                                    <StatusBadge
+                                                        status={i.status}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <div className="admin-actions">
+                                                        <button
+                                                            className="table-action"
+                                                            onClick={() =>
+                                                                onViewInquiry(i)
+                                                            }
+                                                        >
+                                                            View details
+                                                        </button>
+                                                        <button
+                                                            className="table-action"
+                                                            onClick={() =>
+                                                                onMessageApplicant(
+                                                                    i,
+                                                                )
+                                                            }
+                                                        >
+                                                            Quick message
+                                                        </button>
+                                                        <select
+                                                            aria-label={`Update ${i.name}'s inquiry`}
+                                                            value={i.status}
+                                                            onChange={(e) =>
+                                                                onInquiry(
+                                                                    i.id,
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        >
+                                                            <option>
+                                                                Pending
+                                                            </option>
+                                                            <option>
+                                                                In review
+                                                            </option>
+                                                            <option>
+                                                                Contacted
+                                                            </option>
+                                                            <option>
+                                                                Closed
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <EmptyState
+                            title="No inquiries yet"
+                            text="Adoption inquiries for your listings will appear here."
+                        />
+                    ))}
+                {page === "Messages" &&
+                    (messagesView || (
+                        <div className="content-panel">
+                            <h3>Organization conversations</h3>
+                            <p className="form-disclaimer">
+                                Open a conversation from an animal listing,
+                                report, or inquiry. Messaging is a local
+                                demonstration in this frontend.
+                            </p>
+                        </div>
+                    ))}
+                {page === "Profile" && (
+                    <OrgProfile org={org} onSave={onSaveOrg} />
+                )}
+                {page === "Settings" && (
+                    <OrgSettings
+                        org={org}
+                        settings={settings}
+                        onSave={onSaveSettings}
+                        onSaveOrg={onSaveOrg}
+                    />
+                )}
+            </main>
+        </div>
+    );
 }
-function OrgProfile({org,onSave}){const [form,setForm]=useState(org);useEffect(()=>setForm(org),[org]);const [confirmed,setConfirmed]=useState(Boolean(org?.mapLocation));const updateLocation=location=>setForm(v=>({...v,mapLocation:location}));return <form className="content-panel report-form org-edit-profile" onSubmit={e=>{e.preventDefault();onSave(form)}}><div className="org-profile-edit-head"><div className="org-logo large">{form.photo?<img src={form.photo} alt="Organization profile"/>:(form.icon||'🐾')}</div><div><h2>{form.name}</h2><p>Organization profile and public contact details</p></div></div><div className="form-grid"><Field label="Profile picture" wide><PhotoUpload value={form.photo||null} onChange={photo=>setForm({...form,photo})}/></Field><Field label="Organization name"><input required value={form.name||''} onChange={e=>setForm({...form,name:e.target.value})}/></Field><Field label="Category"><select value={form.category||'Rescue organization'} onChange={e=>setForm({...form,category:e.target.value})}><option>Animal shelter</option><option>Rescue organization</option><option>Animal center</option><option>Public service</option><option>Other</option></select></Field><Field label="Contact person"><input value={form.representative||''} onChange={e=>setForm({...form,representative:e.target.value})}/></Field><Field label="Email"><input type="email" required value={form.email||''} onChange={e=>setForm({...form,email:e.target.value})}/></Field><Field label="Contact number"><input required value={form.phone||''} onChange={e=>setForm({...form,phone:e.target.value})}/></Field><Field label="Address" wide><input required value={form.address||''} onChange={e=>setForm({...form,address:e.target.value})}/></Field><Field label="Province or region"><input value={form.region||''} onChange={e=>setForm({...form,region:e.target.value})}/></Field><Field label="City"><input value={form.city||''} onChange={e=>setForm({...form,city:e.target.value})}/></Field><Field label="About your organization" wide><textarea rows="4" value={form.description||''} onChange={e=>setForm({...form,description:e.target.value})}/></Field><Field label="Pin your location" wide><LocationPicker address={form.address||''} setAddress={address=>setForm(v=>({...v,address}))} confirmed={confirmed} setConfirmed={setConfirmed} location={form.mapLocation||null} setLocation={location=>{updateLocation(location);setConfirmed(false)}}/></Field><div className="span2"><button className="btn btn-primary">Save organization profile</button></div></div><p className="form-disclaimer">Changes update your public shelter profile and contact details.</p></form>}function OrgSettings({org,settings,onSave}){const [visible,setVisible]=useState(org.listingVisible!==false),[theme,setTheme]=useState(settings?.theme||'light'),[fontSize,setFontSize]=useState(settings?.fontSize||'medium');useEffect(()=>{setTheme(settings?.theme||'light');setFontSize(settings?.fontSize||'medium')},[settings]);return <section className="content-panel settings-list"><label><span><b>Public adoption listings</b><small>Show your active listings in Home and Adopt browsing.</small></span><input type="checkbox" checked={visible} onChange={e=>setVisible(e.target.checked)}/></label><label><span><b>Appearance</b><small>Choose light or dark colors.</small></span><select value={theme} onChange={e=>setTheme(e.target.value)}><option value="light">Light mode</option><option value="dark">Dark mode</option></select></label><label><span><b>Font size</b><small>Adjust reading size across PawRescue.</small></span><select value={fontSize} onChange={e=>setFontSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label><button className="btn btn-primary" onClick={()=>onSave({theme,fontSize})}>Save settings</button><button className="btn btn-soft" onClick={()=>onSave({theme,fontSize,listingVisible:visible})}>Save listing visibility</button><p className="form-disclaimer">Settings apply to the local browser. Public listings may also be hidden by administrator review.</p></section>}
-export function ListingEditor({listing,onSave,onClose}){const [form,setForm]=useState(listing||{name:'',kind:'Dog',breed:'',age:'',gender:'Female',condition:'Healthy',status:'Available',place:'',description:'',image:''}),[photo,setPhoto]=useState(listing?.image||null);if(listing?.remove)return <div className="modal-copy"><div className="kicker">Delete listing</div><h2>Remove {listing.name}?</h2><p>This permanently removes the listing from your organization.</p><button className="btn btn-primary" onClick={()=>onSave({...listing,remove:true})}>Delete listing</button><button className="btn btn-ghost" onClick={onClose}>Cancel</button></div>;return <form className="modal-copy listing-editor" onSubmit={e=>{e.preventDefault();onSave({...form,image:photo||form.image})}}><div className="kicker">Organization listing</div><h2>{listing?'Edit listing':'Create an animal listing'}</h2><div className="form-grid"><Field label="Animal name"><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></Field><Field label="Animal type"><select value={form.kind} onChange={e=>setForm({...form,kind:e.target.value})}><option>Dog</option><option>Cat</option><option>Other</option></select></Field><Field label="Breed"><input value={form.breed} onChange={e=>setForm({...form,breed:e.target.value})}/></Field><Field label="Age"><input value={form.age} onChange={e=>setForm({...form,age:e.target.value})}/></Field><Field label="Gender"><select value={form.gender} onChange={e=>setForm({...form,gender:e.target.value})}><option>Female</option><option>Male</option><option>Unknown</option></select></Field><Field label="Condition"><select value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})}><option>Healthy</option><option>Recovering</option><option>Needs attention</option><option>Unknown</option></select></Field><Field label="Adoption status"><select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Available</option><option>On hold</option><option>Adopted</option></select></Field><Field label="Location"><input value={form.place} onChange={e=>setForm({...form,place:e.target.value})}/></Field><Field label="Description" wide><textarea rows="3" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></Field><Field label="Photo" wide><PhotoUpload value={photo} onChange={setPhoto}/></Field><button className="btn btn-primary span2">Save listing</button></div></form>}
-
-export function AdminDashboard({page,setPage,users,reports,organizations,announcements,settings,onSaveSettings,onAction,onReviewReport,onDeleteReport,onViewReport,onViewAccount,onSendAlert,onSaveOrg,onSaveAnnouncement,onDeleteAnnouncement,onLogout}){
- const [q,setQ]=useState('')
- const filtered=useMemo(()=>users.filter(u=>`${u.name} ${u.email} ${u.role}`.toLowerCase().includes(q.toLowerCase())),[users,q])
- const pendingUsers=users.filter(u=>u.status==='Pending').length,pendingReports=reports.filter(r=>!['Approved','Rejected'].includes(r.approvalStatus)).length
- const nav=['Administrator','Report Moderation','Account management','Content Management','Settings']
- return <div className="staff-layout admin-layout"><aside className="staff-sidebar"><div className="staff-org"><span className="org-logo">🛡️</span><b>PawRescue</b><small>Administrator workspace</small></div>{nav.map(item=><button key={item} className={page===item?'selected':''} onClick={()=>setPage(item)}>{item==='Administrator'?'Overview':item==='Content Management'?'Platform content':item}</button>)}<button className="staff-logout" onClick={onLogout}>Log out</button></aside><main className="dashboard-shell"><PageIntro eyebrow="Administrator workspace" title={page==='Administrator'?'Platform overview':page==='Content Management'?'Platform content':page} text="Manage report review, accounts, directory information, and platform preferences."/>
- {page==='Administrator'&&<><div className="dash-stats">{[[users.length,'Accounts','Local demo records'],[users.filter(u=>u.role==='organization').length,'Organizations','Participating groups'],[pendingUsers,'Organization approvals','Awaiting review'],[pendingReports,'Report reviews','Awaiting review']].map(([n,l,s])=><article className="stat" key={l}><div className="stat-label">{l}</div><div className="stat-num">{n}</div><div className="stat-note">{s}</div></article>)}</div><section className="content-panel"><div className="box-head"><div><h2>Moderation overview</h2><p>Approve organization registrations and public animal reports before granting access or publishing details.</p></div></div><div className="quick-grid"><button className="quick-btn" onClick={()=>setPage('Report Moderation')}><span>📋</span>Review animal reports<ArrowRight size={14}/></button><button className="quick-btn" onClick={()=>setPage('Account management')}><span>🏠</span>Review organization accounts<ArrowRight size={14}/></button></div></section></>}
- {page==='Report Moderation'&&<section className="content-panel"><div className="box-head"><div><h2>Animal report review</h2><p>Approve reports for public display, reject reports, or delete a record.</p></div></div><div className="table-wrap"><table><thead><tr><th>REPORT</th><th>ANIMAL / CONDITION</th><th>LOCATION</th><th>SUBMITTED</th><th>STATUS</th><th>PUBLICATION</th><th>ACTIONS</th></tr></thead><tbody>{reports.map(r=><tr key={r.id}><td><b>{r.id}</b><small>{r.kind}</small></td><td>{r.animalType} · {r.breed||'Unknown'}<small>{r.condition}</small></td><td>{r.place}</td><td>{r.date}</td><td><StatusBadge status={r.status}/></td><td><StatusBadge status={r.approvalStatus||'Pending'}/></td><td><div className="admin-actions"><button className="table-action" onClick={()=>onViewReport(r)}>View Details</button><button className="table-action" onClick={()=>onReviewReport(r.id,'Approved')}>Approve</button><button className="table-action reject-action" onClick={()=>onReviewReport(r.id,'Rejected')}>Reject</button><button className="table-action reject-action" onClick={()=>onDeleteReport(r.id)}>Delete</button></div></td></tr>)}</tbody></table></div>{!reports.length&&<EmptyState title="No reports to review" text="Submitted animal reports will appear here."/>}</section>}
- {page==='Account management'&&<section className="content-panel" id="admin-accounts"><div className="box-head"><div><h2>Account management</h2><p>Approve organization registrations, manage access, and remove accounts.</p></div></div><div className="admin-search"><label className="searchbox"><Search size={17}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search accounts…"/></label></div><div className="table-wrap"><table><thead><tr><th>ACCOUNT</th><th>ROLE</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody>{filtered.map(u=><tr key={u.id}><td><b>{u.name}</b><small>{u.email}</small></td><td>{u.role}</td><td>{u.role==='admin'?<StatusBadge status="Active"/>:<StatusBadge status={u.status||'Active'}/>}</td><td><div className="admin-actions"><button className="table-action" onClick={()=>onViewAccount(u)}>View Details</button><button className="table-action" onClick={()=>onSendAlert(u)}>Send alert</button>{u.role==='admin'?<span className="form-disclaimer">Protected system account</span>:<>{u.status==='Pending'?<><button className="table-action" onClick={()=>onAction(u,'approve')}>Approve</button><button className="table-action reject-action" onClick={()=>onAction(u,'reject')}>Reject</button></>:u.status==='Rejected'?<button className="table-action" onClick={()=>onAction(u,'approve')}>Approve</button>:<button className="table-action" onClick={()=>onAction(u,u.status==='Suspended'?'restore':'suspend')}>{u.status==='Suspended'?'Restore access':'Suspend access'}</button>}<button className="table-action reject-action" onClick={()=>onAction(u,'delete')}>Delete account</button></>}</div></td></tr>)}</tbody></table></div></section>}
- {page==='Content Management'&&<AdminContentManagement organizations={organizations} announcements={announcements} onSaveOrg={onSaveOrg} onSaveAnnouncement={onSaveAnnouncement} onDeleteAnnouncement={onDeleteAnnouncement}/>}
- {page==='Settings'&&<AppearanceSettings settings={settings} onSave={onSaveSettings}/>}
- </main></div>
+function OrgProfile({ org, onSave }) {
+    const [form, setForm] = useState(org);
+    useEffect(() => setForm(org), [org]);
+    const [confirmed, setConfirmed] = useState(Boolean(org?.mapLocation));
+    const updateLocation = (location) =>
+        setForm((v) => ({ ...v, mapLocation: location }));
+    return (
+        <form
+            className="content-panel report-form org-edit-profile"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSave(form);
+            }}
+        >
+            <div className="org-profile-edit-head">
+                <div className="org-logo large">
+                    {form.photo ? (
+                        <img src={form.photo} alt="Organization profile" />
+                    ) : (
+                        form.icon || "🐾"
+                    )}
+                </div>
+                <div>
+                    <h2>{form.name}</h2>
+                    <p>Organization profile and public contact details</p>
+                </div>
+            </div>
+            <div className="form-grid">
+                <Field label="Profile picture" wide>
+                    <PhotoUpload
+                        value={form.photo || null}
+                        onChange={(photo) => setForm({ ...form, photo })}
+                        profilePicture
+                    />
+                </Field>
+                <Field label="Organization name">
+                    <input
+                        required
+                        value={form.name || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Category">
+                    <select
+                        value={form.category || "Rescue organization"}
+                        onChange={(e) =>
+                            setForm({ ...form, category: e.target.value })
+                        }
+                    >
+                        <option>Animal shelter</option>
+                        <option>Rescue organization</option>
+                        <option>Animal center</option>
+                        <option>Public service</option>
+                        <option>Other</option>
+                    </select>
+                </Field>
+                <Field label="Contact person">
+                    <input
+                        value={form.representative || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, representative: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Email">
+                    <input
+                        type="email"
+                        required
+                        value={form.email || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, email: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Contact number">
+                    <input
+                        required
+                        value={form.phone || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, phone: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Address" wide>
+                    <input
+                        required
+                        value={form.address || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, address: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Province or region">
+                    <input
+                        value={form.region || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, region: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="City">
+                    <input
+                        value={form.city || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, city: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="About your organization" wide>
+                    <textarea
+                        rows="4"
+                        value={form.description || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, description: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Pin your location" wide>
+                    <LocationPicker
+                        address={form.address || ""}
+                        setAddress={(address) =>
+                            setForm((v) => ({ ...v, address }))
+                        }
+                        confirmed={confirmed}
+                        setConfirmed={setConfirmed}
+                        location={form.mapLocation || null}
+                        setLocation={(location) => {
+                            updateLocation(location);
+                            setConfirmed(false);
+                        }}
+                    />
+                </Field>
+                <div className="span2">
+                    <button className="btn btn-primary">
+                        Save organization profile
+                    </button>
+                </div>
+            </div>
+            <p className="form-disclaimer">
+                Changes update your public shelter profile and contact details.
+            </p>
+        </form>
+    );
+}
+function OrgSettings({ org, settings, onSave, onSaveOrg }) {
+    const defaults = {
+            theme: "light",
+            fontSize: "medium",
+            emailUpdates: true,
+            compactView: false,
+        },
+        [v, setV] = useState({ ...defaults, ...settings }),
+        [visible, setVisible] = useState(org.listingVisible !== false);
+    useEffect(() => onSave(v), [v]);
+    useEffect(() => setVisible(org.listingVisible !== false), [org]);
+    return (
+        <section className="content-panel settings-list">
+            <div className="settings-intro">
+                <b>Appearance and notifications</b>
+                <p>
+                    Changes save automatically and apply across the organization
+                    workspace.
+                </p>
+            </div>
+            <label>
+                <span>
+                    <b>Color mode</b>
+                    <small>Choose a light or dark interface.</small>
+                </span>
+                <select
+                    value={v.theme}
+                    onChange={(e) => setV({ ...v, theme: e.target.value })}
+                >
+                    <option value="light">Light mode</option>
+                    <option value="dark">Dark mode</option>
+                </select>
+            </label>
+            <label>
+                <span>
+                    <b>Font size</b>
+                    <small>Adjust reading size across the workspace.</small>
+                </span>
+                <select
+                    value={v.fontSize}
+                    onChange={(e) => setV({ ...v, fontSize: e.target.value })}
+                >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                </select>
+            </label>
+            <label>
+                <span>
+                    <b>Email updates</b>
+                    <small>Receive account and report update notices.</small>
+                </span>
+                <input
+                    type="checkbox"
+                    checked={v.emailUpdates}
+                    onChange={(e) =>
+                        setV({ ...v, emailUpdates: e.target.checked })
+                    }
+                />
+            </label>
+            <label>
+                <span>
+                    <b>Compact listings</b>
+                    <small>Use a denser animal card layout.</small>
+                </span>
+                <input
+                    type="checkbox"
+                    checked={v.compactView}
+                    onChange={(e) =>
+                        setV({ ...v, compactView: e.target.checked })
+                    }
+                />
+            </label>
+            <label>
+                <span>
+                    <b>Public adoption listings</b>
+                    <small>
+                        Show your active listings in Home and Adopt browsing.
+                    </small>
+                </span>
+                <input
+                    type="checkbox"
+                    checked={visible}
+                    onChange={(e) => {
+                        setVisible(e.target.checked);
+                        onSaveOrg({ ...org, listingVisible: e.target.checked });
+                    }}
+                />
+            </label>
+            <button
+                className="btn btn-ghost settings-reset"
+                onClick={() => {
+                    setV(defaults);
+                    setVisible(true);
+                    onSaveOrg({ ...org, listingVisible: true });
+                }}
+            >
+                Reset preferences
+            </button>
+            <p className="form-disclaimer">
+                Preferences save in this browser. Public listings may also be
+                hidden by administrator review.
+            </p>
+        </section>
+    );
+}
+export function ListingEditor({ listing, onSave, onClose }) {
+    const [form, setForm] = useState(
+            listing || {
+                name: "",
+                kind: "Dog",
+                breed: "",
+                age: "",
+                gender: "Female",
+                size: "Medium",
+                condition: "Healthy",
+                status: "Available",
+                place: "",
+                description: "",
+                image: "",
+            },
+        ),
+        [photo, setPhoto] = useState(listing?.image || null);
+    if (listing?.remove)
+        return (
+            <div className="modal-copy">
+                <div className="kicker">Delete listing</div>
+                <h2>Remove {listing.name}?</h2>
+                <p>
+                    This permanently removes the listing from your organization.
+                </p>
+                <button
+                    className="btn btn-primary"
+                    onClick={() => onSave({ ...listing, remove: true })}
+                >
+                    Delete listing
+                </button>
+                <button className="btn btn-ghost" onClick={onClose}>
+                    Cancel
+                </button>
+            </div>
+        );
+    return (
+        <form
+            className="modal-copy listing-editor"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSave({ ...form, image: photo || form.image });
+            }}
+        >
+            <div className="kicker">Organization listing</div>
+            <h2>{listing ? "Edit listing" : "Create an animal listing"}</h2>
+            <div className="form-grid">
+                <Field label="Animal name">
+                    <input
+                        required
+                        value={form.name}
+                        onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Animal type">
+                    <select
+                        value={form.kind}
+                        onChange={(e) =>
+                            setForm({ ...form, kind: e.target.value })
+                        }
+                    >
+                        <option>Dog</option>
+                        <option>Cat</option>
+                        <option>Other</option>
+                    </select>
+                </Field>
+                <Field label="Breed">
+                    <input
+                        value={form.breed}
+                        onChange={(e) =>
+                            setForm({ ...form, breed: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Age">
+                    <input
+                        value={form.age}
+                        onChange={(e) =>
+                            setForm({ ...form, age: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Gender">
+                    <select
+                        value={form.gender}
+                        onChange={(e) =>
+                            setForm({ ...form, gender: e.target.value })
+                        }
+                    >
+                        <option>Female</option>
+                        <option>Male</option>
+                        <option>Unknown</option>
+                    </select>
+                </Field>
+                <Field label="Size">
+                    <select
+                        value={form.size || "Medium"}
+                        onChange={(e) =>
+                            setForm({ ...form, size: e.target.value })
+                        }
+                    >
+                        <option>Small</option>
+                        <option>Medium</option>
+                        <option>Large</option>
+                    </select>
+                </Field>
+                <Field label="Condition">
+                    <select
+                        value={form.condition}
+                        onChange={(e) =>
+                            setForm({ ...form, condition: e.target.value })
+                        }
+                    >
+                        <option>Healthy</option>
+                        <option>Recovering</option>
+                        <option>Needs attention</option>
+                        <option>Unknown</option>
+                    </select>
+                </Field>
+                <Field label="Adoption status">
+                    <select
+                        value={form.status}
+                        onChange={(e) =>
+                            setForm({ ...form, status: e.target.value })
+                        }
+                    >
+                        <option>Available</option>
+                        <option>On hold</option>
+                        <option>Adopted</option>
+                    </select>
+                </Field>
+                <Field label="Location">
+                    <input
+                        value={form.place}
+                        onChange={(e) =>
+                            setForm({ ...form, place: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Description" wide>
+                    <textarea
+                        rows="3"
+                        value={form.description}
+                        onChange={(e) =>
+                            setForm({ ...form, description: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Photo" wide>
+                    <PhotoUpload value={photo} onChange={setPhoto} />
+                </Field>
+                <button className="btn btn-primary span2">Save listing</button>
+            </div>
+        </form>
+    );
 }
 
-function AppearanceSettings({settings,onSave}){const [theme,setTheme]=useState(settings?.theme||'light'),[fontSize,setFontSize]=useState(settings?.fontSize||'medium'),[emailUpdates,setEmailUpdates]=useState(settings?.emailUpdates??true),[compactView,setCompactView]=useState(settings?.compactView??false);useEffect(()=>{setTheme(settings?.theme||'light');setFontSize(settings?.fontSize||'medium');setEmailUpdates(settings?.emailUpdates??true);setCompactView(settings?.compactView??false)},[settings]);useEffect(()=>{onSave({theme,fontSize,emailUpdates,compactView})},[theme,fontSize,emailUpdates,compactView]);const reset=()=>{setTheme('light');setFontSize('medium');setEmailUpdates(true);setCompactView(false)};return <section className="content-panel settings-list"><PageIntro eyebrow="Platform preferences" title="Settings" text="Changes save automatically. Reset returns the platform to its default appearance and notification preferences."/><label><span><b>Color mode</b><small>Choose a light or dark interface.</small></span><select value={theme} onChange={e=>setTheme(e.target.value)}><option value="light">Light mode</option><option value="dark">Dark mode</option></select></label><label><span><b>Font size</b><small>Adjust text size across the workspace.</small></span><select value={fontSize} onChange={e=>setFontSize(e.target.value)}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label><label><span><b>Email update preference</b><small>Keep account notices enabled for staff accounts.</small></span><input type="checkbox" checked={emailUpdates} onChange={e=>setEmailUpdates(e.target.checked)}/></label><label><span><b>Compact tables</b><small>Use denser spacing on administrative pages.</small></span><input type="checkbox" checked={compactView} onChange={e=>setCompactView(e.target.checked)}/></label><button className="btn btn-ghost settings-reset" onClick={reset}>Reset settings</button><p className="form-disclaimer">Preferences are saved automatically in this browser.</p></section>}
-
-function AdminContentManagement({organizations,announcements,onSaveOrg,onSaveAnnouncement,onDeleteAnnouncement}){
- const [title,setTitle]=useState(''),[body,setBody]=useState('')
- const publish=e=>{e.preventDefault();if(!title.trim()||!body.trim())return;onSaveAnnouncement({title:title.trim(),body:body.trim(),date:new Date().toLocaleDateString()});setTitle('');setBody('')}
- return <div className="admin-content-grid"><section className="content-panel"><div className="box-head"><div><h2>Shelter Directory</h2><p>Maintain shared organization contact and directory information.</p></div></div><div className="directory-admin-list">{organizations.map(org=><DirectoryEditor key={org.id} organization={org} onSave={onSaveOrg}/>)}</div></section><section className="content-panel"><div className="box-head"><div><h2>Platform announcements</h2><p>Publish a notice on the public Home page.</p></div></div><form className="announcement-form" onSubmit={publish}><Field label="Announcement title"><input required value={title} onChange={e=>setTitle(e.target.value)}/></Field><Field label="Message"><textarea required rows="3" value={body} onChange={e=>setBody(e.target.value)}/></Field><button className="btn btn-primary">Publish announcement</button></form><div className="announcement-admin-list">{announcements.map(item=><article key={item.id}><div><b>{item.title}</b><small>{item.date}</small><p>{item.body}</p></div><button className="table-action reject-action" onClick={()=>onDeleteAnnouncement(item.id)}>Remove</button></article>)}{!announcements.length&&<p className="form-disclaimer">No announcements are published.</p>}</div></section></div>
+export function AdminDashboard({
+    page,
+    setPage,
+    users,
+    reports,
+    organizations,
+    announcements,
+    settings,
+    onSaveSettings,
+    onAction,
+    onReviewReport,
+    onDeleteReport,
+    onViewReport,
+    onViewAccount,
+    onSendAlert,
+    onSaveOrg,
+    onSaveAnnouncement,
+    onDeleteAnnouncement,
+    onLogout,
+}) {
+    const [q, setQ] = useState("");
+    const filtered = useMemo(
+        () =>
+            users.filter((u) =>
+                `${u.name} ${u.email} ${u.role}`
+                    .toLowerCase()
+                    .includes(q.toLowerCase()),
+            ),
+        [users, q],
+    );
+    const pendingUsers = users.filter((u) => u.status === "Pending").length,
+        pendingReports = reports.filter(
+            (r) => !["Approved", "Rejected"].includes(r.approvalStatus),
+        ).length;
+    const nav = [
+        "Administrator",
+        "Report Moderation",
+        "Account management",
+        "Content Management",
+        "Settings",
+    ];
+    return (
+        <div className="staff-layout admin-layout">
+            <aside className="staff-sidebar">
+                <div className="staff-org">
+                    <span className="org-logo">🛡️</span>
+                    <b>PawRescue</b>
+                    <small>Administrator workspace</small>
+                </div>
+                {nav.map((item) => (
+                    <button
+                        key={item}
+                        className={page === item ? "selected" : ""}
+                        onClick={() => setPage(item)}
+                    >
+                        {item === "Administrator"
+                            ? "Overview"
+                            : item === "Content Management"
+                              ? "Platform content"
+                              : item}
+                    </button>
+                ))}
+                <button className="staff-logout" onClick={onLogout}>
+                    <LogOut size={17} /> Log out
+                </button>
+            </aside>
+            <main className="dashboard-shell">
+                <PageIntro
+                    eyebrow="Administrator workspace"
+                    title={
+                        page === "Administrator"
+                            ? "Platform overview"
+                            : page === "Content Management"
+                              ? "Platform content"
+                              : page
+                    }
+                    text="Manage report review, accounts, directory information, and platform preferences."
+                />
+                {page === "Administrator" && (
+                    <>
+                        <div className="dash-stats">
+                            {[
+                                [
+                                    users.length,
+                                    "Accounts",
+                                    "Local demo records",
+                                ],
+                                [
+                                    users.filter(
+                                        (u) => u.role === "organization",
+                                    ).length,
+                                    "Organizations",
+                                    "Participating groups",
+                                ],
+                                [
+                                    pendingUsers,
+                                    "Organization approvals",
+                                    "Awaiting review",
+                                ],
+                                [
+                                    pendingReports,
+                                    "Report reviews",
+                                    "Awaiting review",
+                                ],
+                            ].map(([n, l, s]) => (
+                                <article className="stat" key={l}>
+                                    <div className="stat-label">{l}</div>
+                                    <div className="stat-num">{n}</div>
+                                    <div className="stat-note">{s}</div>
+                                </article>
+                            ))}
+                        </div>
+                        <section className="content-panel">
+                            <div className="box-head">
+                                <div>
+                                    <h2>Moderation overview</h2>
+                                    <p>
+                                        Approve organization registrations and
+                                        public animal reports before granting
+                                        access or publishing details.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="quick-grid">
+                                <button
+                                    className="quick-btn"
+                                    onClick={() => setPage("Report Moderation")}
+                                >
+                                    <span>📋</span>Review animal reports
+                                    <ArrowRight size={14} />
+                                </button>
+                                <button
+                                    className="quick-btn"
+                                    onClick={() =>
+                                        setPage("Account management")
+                                    }
+                                >
+                                    <span>🏠</span>Review organization accounts
+                                    <ArrowRight size={14} />
+                                </button>
+                            </div>
+                        </section>
+                    </>
+                )}
+                {page === "Report Moderation" && (
+                    <section className="content-panel">
+                        <div className="box-head">
+                            <div>
+                                <h2>Animal report review</h2>
+                                <p>
+                                    Approve reports for public display, reject
+                                    reports, or delete a record.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>REPORT</th>
+                                        <th>ANIMAL / CONDITION</th>
+                                        <th>LOCATION</th>
+                                        <th>SUBMITTED</th>
+                                        <th>STATUS</th>
+                                        <th>PUBLICATION</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {reports.map((r) => (
+                                        <tr key={r.id}>
+                                            <td>
+                                                <b>{r.id}</b>
+                                                <small>{r.kind}</small>
+                                            </td>
+                                            <td>
+                                                {r.animalType} ·{" "}
+                                                {r.breed || "Unknown"}
+                                                <small>{r.condition}</small>
+                                            </td>
+                                            <td>{r.place}</td>
+                                            <td>{r.date}</td>
+                                            <td>
+                                                <StatusBadge
+                                                    status={r.status}
+                                                />
+                                            </td>
+                                            <td>
+                                                <StatusBadge
+                                                    status={
+                                                        r.approvalStatus ||
+                                                        "Pending"
+                                                    }
+                                                />
+                                            </td>
+                                            <td>
+                                                <div className="admin-actions">
+                                                    <button
+                                                        className="table-action"
+                                                        onClick={() =>
+                                                            onViewReport(r)
+                                                        }
+                                                    >
+                                                        View Details
+                                                    </button>
+                                                    <button
+                                                        className="table-action"
+                                                        onClick={() =>
+                                                            onReviewReport(
+                                                                r.id,
+                                                                "Approved",
+                                                            )
+                                                        }
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        className="table-action reject-action"
+                                                        onClick={() =>
+                                                            onReviewReport(
+                                                                r.id,
+                                                                "Rejected",
+                                                            )
+                                                        }
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                    <button
+                                                        className="table-action reject-action"
+                                                        onClick={() =>
+                                                            onDeleteReport(r.id)
+                                                        }
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {!reports.length && (
+                            <EmptyState
+                                title="No reports to review"
+                                text="Submitted animal reports will appear here."
+                            />
+                        )}
+                    </section>
+                )}
+                {page === "Account management" && (
+                    <section className="content-panel" id="admin-accounts">
+                        <div className="box-head">
+                            <div>
+                                <h2>Account management</h2>
+                                <p>
+                                    Approve organization registrations, manage
+                                    access, and remove accounts.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="admin-search">
+                            <label className="searchbox">
+                                <Search size={17} />
+                                <input
+                                    value={q}
+                                    onChange={(e) => setQ(e.target.value)}
+                                    placeholder="Search accounts…"
+                                />
+                            </label>
+                        </div>
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ACCOUNT</th>
+                                        <th>ROLE</th>
+                                        <th>STATUS</th>
+                                        <th>ACTIONS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filtered.map((u) => (
+                                        <tr key={u.id}>
+                                            <td>
+                                                <b>{u.name}</b>
+                                                <small>{u.email}</small>
+                                            </td>
+                                            <td>{u.role}</td>
+                                            <td>
+                                                {u.role === "admin" ? (
+                                                    <StatusBadge status="Active" />
+                                                ) : (
+                                                    <StatusBadge
+                                                        status={
+                                                            u.status || "Active"
+                                                        }
+                                                    />
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="admin-actions">
+                                                    <button
+                                                        className="table-action"
+                                                        onClick={() =>
+                                                            onViewAccount(u)
+                                                        }
+                                                    >
+                                                        View Details
+                                                    </button>
+                                                    <button
+                                                        className="table-action"
+                                                        onClick={() =>
+                                                            onSendAlert(u)
+                                                        }
+                                                    >
+                                                        Send alert
+                                                    </button>
+                                                    {u.role === "admin" ? (
+                                                        <span className="form-disclaimer">
+                                                            Protected system
+                                                            account
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            {u.status ===
+                                                            "Pending" ? (
+                                                                <>
+                                                                    <button
+                                                                        className="table-action"
+                                                                        onClick={() =>
+                                                                            onAction(
+                                                                                u,
+                                                                                "approve",
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Approve
+                                                                    </button>
+                                                                    <button
+                                                                        className="table-action reject-action"
+                                                                        onClick={() =>
+                                                                            onAction(
+                                                                                u,
+                                                                                "reject",
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </>
+                                                            ) : u.status ===
+                                                              "Rejected" ? (
+                                                                <button
+                                                                    className="table-action"
+                                                                    onClick={() =>
+                                                                        onAction(
+                                                                            u,
+                                                                            "approve",
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="table-action"
+                                                                    onClick={() =>
+                                                                        onAction(
+                                                                            u,
+                                                                            u.status ===
+                                                                                "Suspended"
+                                                                                ? "restore"
+                                                                                : "suspend",
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {u.status ===
+                                                                    "Suspended"
+                                                                        ? "Restore access"
+                                                                        : "Suspend access"}
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                className="table-action reject-action"
+                                                                onClick={() =>
+                                                                    onAction(
+                                                                        u,
+                                                                        "delete",
+                                                                    )
+                                                                }
+                                                            >
+                                                                Delete account
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                )}
+                {page === "Content Management" && (
+                    <AdminContentManagement
+                        organizations={organizations}
+                        announcements={announcements}
+                        onSaveOrg={onSaveOrg}
+                        onSaveAnnouncement={onSaveAnnouncement}
+                        onDeleteAnnouncement={onDeleteAnnouncement}
+                    />
+                )}
+                {page === "Settings" && (
+                    <AppearanceSettings
+                        settings={settings}
+                        onSave={onSaveSettings}
+                    />
+                )}
+            </main>
+        </div>
+    );
 }
 
-function DirectoryEditor({organization,onSave}){const [form,setForm]=useState(organization);useEffect(()=>setForm(organization),[organization]);return <form className="directory-editor" onSubmit={e=>{e.preventDefault();onSave(form)}}><div className="directory-editor-head"><div className="org-logo">{form.photo?<img src={form.photo} alt="Organization profile"/>:(form.icon||'🐾')}</div><div><h3>{form.name}</h3><small>{form.category}</small></div></div><div className="form-grid"><Field label="Profile picture" wide><PhotoUpload value={form.photo||null} onChange={photo=>setForm({...form,photo})}/></Field><Field label="Organization name"><input required value={form.name||''} onChange={e=>setForm({...form,name:e.target.value})}/></Field><Field label="Category"><input value={form.category||''} onChange={e=>setForm({...form,category:e.target.value})}/></Field><Field label="Contact person"><input value={form.representative||''} onChange={e=>setForm({...form,representative:e.target.value})}/></Field><Field label="Contact email"><input type="email" value={form.email||''} onChange={e=>setForm({...form,email:e.target.value})}/></Field><Field label="Phone"><input value={form.phone||''} onChange={e=>setForm({...form,phone:e.target.value})}/></Field><Field label="Address"><input value={form.address||''} onChange={e=>setForm({...form,address:e.target.value,place:e.target.value})}/></Field><Field label="City"><input value={form.city||''} onChange={e=>setForm({...form,city:e.target.value})}/></Field><Field label="Province / region"><input value={form.region||''} onChange={e=>setForm({...form,region:e.target.value})}/></Field><Field label="Description and services" wide><textarea rows="3" value={form.description||''} onChange={e=>setForm({...form,description:e.target.value})}/></Field><button className="btn btn-soft span2">Save directory entry</button></div></form>}
+function AppearanceSettings({ settings, onSave }) {
+    const [theme, setTheme] = useState(settings?.theme || "light"),
+        [fontSize, setFontSize] = useState(settings?.fontSize || "medium"),
+        [emailUpdates, setEmailUpdates] = useState(
+            settings?.emailUpdates ?? true,
+        ),
+        [compactView, setCompactView] = useState(
+            settings?.compactView ?? false,
+        );
+    useEffect(() => {
+        setTheme(settings?.theme || "light");
+        setFontSize(settings?.fontSize || "medium");
+        setEmailUpdates(settings?.emailUpdates ?? true);
+        setCompactView(settings?.compactView ?? false);
+    }, [settings]);
+    useEffect(() => {
+        onSave({ theme, fontSize, emailUpdates, compactView });
+    }, [theme, fontSize, emailUpdates, compactView]);
+    const reset = () => {
+        setTheme("light");
+        setFontSize("medium");
+        setEmailUpdates(true);
+        setCompactView(false);
+    };
+    return (
+        <section className="content-panel settings-list">
+            <div className="settings-intro">
+                <b>Appearance and notifications</b>
+                <p>
+                    Changes save automatically. Reset returns the platform to
+                    its default appearance and notification preferences.
+                </p>
+            </div>
+            <label>
+                <span>
+                    <b>Color mode</b>
+                    <small>Choose a light or dark interface.</small>
+                </span>
+                <select
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value)}
+                >
+                    <option value="light">Light mode</option>
+                    <option value="dark">Dark mode</option>
+                </select>
+            </label>
+            <label>
+                <span>
+                    <b>Font size</b>
+                    <small>Adjust text size across the workspace.</small>
+                </span>
+                <select
+                    value={fontSize}
+                    onChange={(e) => setFontSize(e.target.value)}
+                >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                </select>
+            </label>
+            <label>
+                <span>
+                    <b>Email update preference</b>
+                    <small>
+                        Keep account notices enabled for staff accounts.
+                    </small>
+                </span>
+                <input
+                    type="checkbox"
+                    checked={emailUpdates}
+                    onChange={(e) => setEmailUpdates(e.target.checked)}
+                />
+            </label>
+            <label>
+                <span>
+                    <b>Compact tables</b>
+                    <small>Use denser spacing on administrative pages.</small>
+                </span>
+                <input
+                    type="checkbox"
+                    checked={compactView}
+                    onChange={(e) => setCompactView(e.target.checked)}
+                />
+            </label>
+            <button className="btn btn-ghost settings-reset" onClick={reset}>
+                Reset settings
+            </button>
+            <p className="form-disclaimer">
+                Preferences are saved automatically in this browser.
+            </p>
+        </section>
+    );
+}
+
+function AdminContentManagement({
+    organizations,
+    announcements,
+    onSaveOrg,
+    onSaveAnnouncement,
+    onDeleteAnnouncement,
+}) {
+    const [title, setTitle] = useState(""),
+        [body, setBody] = useState("");
+    const publish = (e) => {
+        e.preventDefault();
+        if (!title.trim() || !body.trim()) return;
+        onSaveAnnouncement({
+            title: title.trim(),
+            body: body.trim(),
+            date: new Date().toLocaleDateString(),
+        });
+        setTitle("");
+        setBody("");
+    };
+    return (
+        <div className="admin-content-grid">
+            <section className="content-panel">
+                <div className="box-head">
+                    <div>
+                        <h2>Shelter Directory</h2>
+                        <p>
+                            Maintain shared organization contact and directory
+                            information.
+                        </p>
+                    </div>
+                </div>
+                <div className="directory-admin-list">
+                    {organizations.map((org) => (
+                        <DirectoryEditor
+                            key={org.id}
+                            organization={org}
+                            onSave={onSaveOrg}
+                        />
+                    ))}
+                </div>
+            </section>
+            <section className="content-panel">
+                <div className="box-head">
+                    <div>
+                        <h2>Platform announcements</h2>
+                        <p>Publish a notice on the public Home page.</p>
+                    </div>
+                </div>
+                <form className="announcement-form" onSubmit={publish}>
+                    <Field label="Announcement title">
+                        <input
+                            required
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Message">
+                        <textarea
+                            required
+                            rows="3"
+                            value={body}
+                            onChange={(e) => setBody(e.target.value)}
+                        />
+                    </Field>
+                    <button className="btn btn-primary">
+                        Publish announcement
+                    </button>
+                </form>
+                <div className="announcement-admin-list">
+                    {announcements.map((item) => (
+                        <article key={item.id}>
+                            <div>
+                                <b>{item.title}</b>
+                                <small>{item.date}</small>
+                                <p>{item.body}</p>
+                            </div>
+                            <button
+                                className="table-action reject-action"
+                                onClick={() => onDeleteAnnouncement(item.id)}
+                            >
+                                Remove
+                            </button>
+                        </article>
+                    ))}
+                    {!announcements.length && (
+                        <p className="form-disclaimer">
+                            No announcements are published.
+                        </p>
+                    )}
+                </div>
+            </section>
+        </div>
+    );
+}
+
+function DirectoryEditor({ organization, onSave }) {
+    const [form, setForm] = useState(organization);
+    useEffect(() => setForm(organization), [organization]);
+    return (
+        <form
+            className="directory-editor"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSave(form);
+            }}
+        >
+            <div className="directory-editor-head">
+                <div className="org-logo">
+                    {form.photo ? (
+                        <img src={form.photo} alt="Organization profile" />
+                    ) : (
+                        form.icon || "🐾"
+                    )}
+                </div>
+                <div>
+                    <h3>{form.name}</h3>
+                    <small>{form.category}</small>
+                </div>
+            </div>
+            <div className="form-grid">
+                <Field label="Profile picture" wide>
+                    <PhotoUpload
+                        value={form.photo || null}
+                        onChange={(photo) => setForm({ ...form, photo })}
+                    />
+                </Field>
+                <Field label="Organization name">
+                    <input
+                        required
+                        value={form.name || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Category">
+                    <input
+                        value={form.category || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, category: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Contact person">
+                    <input
+                        value={form.representative || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, representative: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Contact email">
+                    <input
+                        type="email"
+                        value={form.email || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, email: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Phone">
+                    <input
+                        value={form.phone || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, phone: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Address">
+                    <input
+                        value={form.address || ""}
+                        onChange={(e) =>
+                            setForm({
+                                ...form,
+                                address: e.target.value,
+                                place: e.target.value,
+                            })
+                        }
+                    />
+                </Field>
+                <Field label="City">
+                    <input
+                        value={form.city || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, city: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Province / region">
+                    <input
+                        value={form.region || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, region: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Description and services" wide>
+                    <textarea
+                        rows="3"
+                        value={form.description || ""}
+                        onChange={(e) =>
+                            setForm({ ...form, description: e.target.value })
+                        }
+                    />
+                </Field>
+                <button className="btn btn-soft span2">
+                    Save directory entry
+                </button>
+            </div>
+        </form>
+    );
+}

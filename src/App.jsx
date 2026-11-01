@@ -1,104 +1,2033 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, ChevronDown, Ellipsis, Heart, Home, LogIn, Menu, MessageCircle, PawPrint, Plus, Settings, UserRound, Users, X } from 'lucide-react'
-import { AnimalCard, EmptyState, Field, Modal, OrganizationCard, PageIntro, StatusBadge } from './components/Controls'
-import { readStore, writeStore, initialPets, initialReports, organizations as seedOrganizations } from './data'
-import { HomePage, AdoptPage, DirectoryPage, PublicReportsPage, AboutPage } from './pages/PublicPages'
-import { AuthPage, FavoritesPage, MessagesPage, MyReportsPage, ProfilePage, ReportDetail, ReportPage, SettingsPage, UserDashboard } from './pages/AccountPages'
-import { AdminDashboard, ListingEditor, OrganizationDashboard } from './pages/StaffPages'
+import { useEffect, useMemo, useState } from "react";
+import {
+    ArrowRight,
+    ChevronDown,
+    Ellipsis,
+    Heart,
+    Home,
+    LayoutDashboard,
+    LogIn,
+    Menu,
+    MessageCircle,
+    Moon,
+    PawPrint,
+    Plus,
+    Settings,
+    Sun,
+    UserRound,
+    Users,
+    X,
+} from "lucide-react";
+import {
+    AnimalCard,
+    EmptyState,
+    Field,
+    Modal,
+    OrganizationCard,
+    PageIntro,
+    StatusBadge,
+} from "./components/Controls";
+import {
+    readStore,
+    writeStore,
+    initialPets,
+    initialReports,
+    organizations as seedOrganizations,
+} from "./data";
+import {
+    HomePage,
+    AdoptPage,
+    DirectoryPage,
+    PublicReportsPage,
+    AboutPage,
+} from "./pages/PublicPages";
+import {
+    AuthPage,
+    FavoritesPage,
+    MessagesPage,
+    MyReportsPage,
+    ProfilePage,
+    ReportDetail,
+    ReportPage,
+    SettingsPage,
+    UserDashboard,
+} from "./pages/AccountPages";
+import {
+    AdminDashboard,
+    ListingEditor,
+    OrganizationDashboard,
+} from "./pages/StaffPages";
 
-const publicLinks=['Home','Animal Reports','Adopt','Shelter Directory','About']
-const orgLinks=['Overview','Reports','Adoption Listings','Adoption Inquiries','Messages','Profile','Settings']
-const adminLinks=['Administrator','Report Moderation','Account management','Content Management','Settings']
-const protectedPages=['Dashboard','My Reports','Profile','Favorites','Settings','Messages','Overview','Reports','Adoption Listings','Adoption Inquiries','Organization Profile','Administrator','Report Moderation','Account management','Content Management']
-const readUser=()=>readStore('session',null)
+const publicLinks = [
+    "Home",
+    "Animal Reports",
+    "Adopt",
+    "Shelter Directory",
+    "About",
+];
+const orgLinks = [
+    "Overview",
+    "Reports",
+    "Adoption Listings",
+    "Adoption Inquiries",
+    "Messages",
+    "Profile",
+    "Settings",
+];
+const adminLinks = [
+    "Administrator",
+    "Report Moderation",
+    "Account management",
+    "Content Management",
+    "Settings",
+];
+const protectedPages = [
+    "Dashboard",
+    "My Reports",
+    "Profile",
+    "Favorites",
+    "Settings",
+    "Messages",
+    "Overview",
+    "Reports",
+    "Adoption Listings",
+    "Adoption Inquiries",
+    "Organization Profile",
+    "Administrator",
+    "Report Moderation",
+    "Account management",
+    "Content Management",
+];
+const readUser = () => readStore("session", null);
 
-export default function App(){
- const [page,setPage]=useState(()=>readUser()?.role==='organization'?'Overview':readUser()?.role==='admin'?'Administrator':'Home'),[session,setSession]=useState(readUser),[menu,setMenu]=useState(false),[mobile,setMobile]=useState(false),[pendingAction,setPendingAction]=useState(null),[toast,setToast]=useState('')
- const [pets,setPets]=useState(()=>readStore('pets',initialPets)),[reports,setReports]=useState(()=>readStore('reports',initialReports)),[orgs,setOrgs]=useState(()=>readStore('organizations',seedOrganizations)),[favorites,setFavorites]=useState(()=>readStore('favorites',[])),[inquiries,setInquiries]=useState(()=>readStore('inquiries',[])),[messages,setMessages]=useState(()=>readStore('messages',[])),[users,setUsers]=useState(()=>readStore('users',[{id:'user-1',name:'Samira Santos',email:'samira@example.com',role:'user',status:'Active'},{id:'org-user-1',name:'Iloilo Animal Care Network',email:'hello@iloiloanimalcare.org',role:'organization',orgId:'org-1',status:'Active'},{id:'admin-1',name:'Platform administrator',email:'admin@pawrescue.local',role:'admin',status:'Active'}]).map(user=>user.role==='admin'?{...user,status:'Active'}:user))
- const [announcements,setAnnouncements]=useState(()=>readStore('announcements',[]))
- const [alerts,setAlerts]=useState(()=>readStore('alerts',[]))
- const [modal,setModal]=useState(null),[adoptOrg,setAdoptOrg]=useState(null),[detailOrg,setDetailOrg]=useState(null),[activeMessageOrg,setActiveMessageOrg]=useState('org-1'),[settings,setSettings]=useState(()=>({emailUpdates:true,compactView:false,theme:'light',fontSize:'medium',...readStore('settings',{})}))
- useEffect(()=>writeStore('pets',pets),[pets]);useEffect(()=>writeStore('reports',reports),[reports]);useEffect(()=>writeStore('organizations',orgs),[orgs]);useEffect(()=>writeStore('favorites',favorites),[favorites]);useEffect(()=>writeStore('inquiries',inquiries),[inquiries]);useEffect(()=>writeStore('messages',messages),[messages]);useEffect(()=>writeStore('users',users),[users]);useEffect(()=>writeStore('announcements',announcements),[announcements]);useEffect(()=>writeStore('alerts',alerts),[alerts]);useEffect(()=>writeStore('settings',settings),[settings]);useEffect(()=>{session?writeStore('session',session):localStorage.removeItem('pawrescue:session')},[session])
- useEffect(()=>{document.body.classList.toggle('compact-view',Boolean(settings.compactView));document.documentElement.dataset.theme=settings.theme||'light';document.documentElement.dataset.fontSize=settings.fontSize||'medium'},[settings])
- const notify=text=>{setToast(text);window.setTimeout(()=>setToast(''),3000)}
- const go=(target,arg)=>{if(target==='Report an animal'){setMenu(false);setMobile(false);if(!session){setPendingAction({target});setPage('Log in')}else if(session.role==='user')setModal({type:'report-form'});else notify('Only regular user accounts can submit reports.');return}let next=target;if(session?.role==='organization'&&target==='Home')next='Overview';else if(session?.role==='organization'&&!orgLinks.includes(target)&&!['Log in','Register'].includes(target))next='Overview';else if(session?.role==='admin'&&!adminLinks.includes(target)&&!['Log in','Register'].includes(target))next='Administrator';else if(session?.role==='user'&&([...orgLinks.filter(item=>!['Messages','Settings','Profile'].includes(item)),...adminLinks].includes(target)))next='Dashboard';else if(!session&&protectedPages.includes(target))next='Log in';setMenu(false);setMobile(false);if(next==='Adopt'&&arg)setAdoptOrg(arg);else if(next==='Adopt')setAdoptOrg(null);if(next==='Messages'&&arg)setActiveMessageOrg(arg.id||arg);setPage(next);window.scrollTo({top:0,behavior:'smooth'})}
- const requireAuth=(target,arg)=>{if(!session){setPendingAction({target,arg});setModal(null);go('Log in');return false}return true}
- const messageOrg=org=>{const id=org?.id||org||'org-1';if(!requireAuth('Messages',id))return;setActiveMessageOrg(id);go('Messages',id)}
- const favorite=id=>{if(!session){requireAuth('Favorites',id);return}if(session.role!=='user'){notify('Favorites are available to regular user accounts.');return}setFavorites(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id]);notify(favorites.includes(id)?'Removed from Favorites.':'Saved to Favorites.')}
- const startAdoptionInquiry=pet=>{if(!session){requireAuth('Adoption Inquiry',pet);return}if(session.role!=='user'){notify('Only regular user accounts can submit adoption forms.');return}setModal({type:'inquiry',pet})}
- const currentOrg=orgs.find(o=>o.id===session?.orgId)||orgs[0],publicOrgs=orgs.filter(o=>o.approved!==false),publicPets=pets.filter(p=>{const org=orgs.find(o=>o.id===p.orgId);return org?.approved!==false&&org?.listingVisible!==false}),publicReports=reports.filter(r=>r.approvalStatus==='Approved'&&orgs.find(o=>o.id===r.orgId)?.approved!==false)
- const login=user=>{const matched=users.find(x=>x.email?.toLowerCase()===user.email?.toLowerCase());if(!matched){notify('No account found. Create an account first.');return}if(matched.role!=='admin'&&matched.role!==user.role){notify(matched.role==='organization'?'This is an organization account. Choose Organization to sign in.':'This is a resident account. Choose Resident to sign in.');return}if(matched.role!=='admin'&&['Suspended','Pending','Rejected'].includes(matched.status)){notify(matched.status==='Pending'?'This organization account is awaiting approval.':matched.status==='Rejected'?'This organization account was not approved.':'This account is suspended and cannot sign in.');return}if(matched.password&&matched.password!==user.password){notify('The password is incorrect.');return}const active={...user,...matched};delete active.password;setSession(active);setMenu(false);setPage(active.role==='organization'?'Overview':active.role==='admin'?'Administrator':'Dashboard');if(pendingAction){const pending=pendingAction;setPendingAction(null);if(pending.target==='Messages'){setActiveMessageOrg(pending.arg);setPage('Messages')}else if(pending.target==='Favorites'){setFavorites(v=>v.includes(pending.arg)?v:[...v,pending.arg]);setPage('Favorites')}else if(pending.target==='Adoption Inquiry'){if(active.role==='user'){setPage('Adopt');setModal({type:'inquiry',pet:pending.arg})}else notify('Only regular user accounts can submit adoption forms.')}else if(pending.target==='Report an animal'){if(active.role==='user'){setPage('Animal Reports');setModal({type:'report-form'})}else notify('Only regular user accounts can submit reports.')}}window.scrollTo({top:0,behavior:'smooth'})}
- const register=user=>{const id=`${user.role}-${Date.now()}`,orgId=user.role==='organization'?`org-${Date.now()}`:undefined;const created={...user,id,orgId,status:user.role==='organization'?'Pending':'Active'};if(user.role==='organization')setOrgs(v=>[...v,{id:orgId,name:user.name,category:user.category||'Rescue organization',icon:'🐾',place:[user.address,user.city,user.region].filter(Boolean).join(', '),address:user.address,city:user.city,region:user.region,representative:user.representative,phone:user.phone,email:user.email,description:user.description||'',services:(user.services||'').split(',').map(x=>x.trim()).filter(Boolean),approved:false}]);setUsers(v=>[...v,created]);if(created.role==='organization'){setSession(null);go('Log in');notify('Organization account submitted for administrator approval.');return}const active={...created};delete active.password;setSession(active);setPage('Dashboard');if(pendingAction?.target==='Report an animal'){setPendingAction(null);setPage('Animal Reports');setModal({type:'report-form'})}notify('Account created in this browser.')}
- const saveProfile=user=>{setSession(user);setUsers(v=>v.map(x=>x.id===user.id?{...x,...user}:x));if(user.role==='organization'&&user.orgId)setOrgs(v=>v.map(org=>org.id===user.orgId?{...org,name:user.name,email:user.email,phone:user.phone,address:user.address}:org));notify('Profile saved in this browser.')}
-  const saveOrgProfile=updated=>{const saved={...updated,place:[updated.address,updated.city,updated.region].filter(Boolean).join(', ')};setOrgs(v=>v.map(o=>o.id===saved.id?saved:o));setUsers(v=>v.map(user=>user.orgId===saved.id?{...user,name:saved.name,email:saved.email,phone:saved.phone,address:saved.address,city:saved.city,region:saved.region}:user));setSession(current=>current?.orgId===saved.id?{...current,name:saved.name,email:saved.email,phone:saved.phone,address:saved.address,city:saved.city,region:saved.region}:current);notify('Organization profile saved in this browser.')}
- const saveAnnouncement=announcement=>{setAnnouncements(v=>[{...announcement,id:`announcement-${Date.now()}`},...v]);notify('Announcement published.')}
- const removeAnnouncement=id=>setAnnouncements(v=>v.filter(item=>item.id!==id))
- const sendAlert=(user,message)=>{if(!message?.trim())return;setAlerts(v=>[{id:`alert-${Date.now()}`,userId:user.id,orgId:user.orgId||null,role:user.role,title:'PawRescue notice',message:message.trim(),date:new Date().toLocaleString(),read:false},...v]);notify(`Notice sent to ${user.name}.`)}
- const submitReport=record=>{const org=orgs.find(o=>o.id===record.orgId)||orgs[0];const row={...record,id:`PR-${Math.floor(1000+Math.random()*8999)}`,place:record.address,date:new Date().toLocaleString(),status:'Pending',tone:'amber',userId:session?.id,orgId:org.id,approvalStatus:'Pending',publicDisplay:false,lat:record.location.lat,lng:record.location.lng};setReports(v=>[row,...v]);setModal(null);notify('Report recorded and sent for review.');go('My Reports')}
- const submitInquiry=data=>{if(session?.role!=='user'){notify('Only regular user accounts can submit adoption forms.');return}const org=orgs.find(o=>o.id===data.pet.orgId);const inquiry={...data,id:`IN-${Date.now()}`,userId:session.id,orgId:org.id,listingId:data.pet.id,petName:data.pet.name,orgName:org.name,date:new Date().toLocaleDateString(),status:'Pending'};setInquiries(v=>[inquiry,...v]);setMessages(v=>[...v,{id:`msg-${Date.now()}`,orgId:org.id,senderId:session.id,participantId:session.id,text:`Adoption inquiry for ${data.pet.name}: ${data.reason||'I would like to learn more.'}`,time:'Just now'}]);setModal({type:'success',text:`Your inquiry about ${data.pet.name} was saved for ${org.name}.`})}
- const sendMessage=data=>{setMessages(v=>[...v,{...data,id:`msg-${Date.now()}`,time:'Just now'}])}
- const updateStatus=(id,status)=>setReports(v=>v.map(r=>r.id===id?{...r,status,tone:status==='Pending'?'amber':status==='Responding'?'blue':status==='Rescued'?'purple':status==='Cancelled'?'red':'green'}:r))
- const reviewReport=(id,approvalStatus)=>setReports(v=>v.map(r=>r.id===id?{...r,approvalStatus,publicDisplay:approvalStatus==='Approved'}:r))
- const organizationReportDecision=(id,action)=>setReports(v=>v.map(report=>{if(report.id!==id)return report;if(action==='accept')return {...report,orgId:session.orgId,assignmentStatus:'Accepted',declinedBy:(report.declinedBy||[]).filter(id=>id!==session.orgId)};if(action==='reject')return {...report,orgId:null,assignmentStatus:'Available',declinedBy:[...new Set([...(report.declinedBy||[]),session.orgId])]};return {...report,status:'Cancelled',assignmentStatus:'Cancelled',cancelledByOrgId:session.orgId}}))
- const deleteReport=id=>{const report=reports.find(row=>row.id===id);if(!report||!window.confirm(`Delete report ${id}? This cannot be undone in this browser.`))return;setReports(rows=>rows.filter(row=>row.id!==id));notify('Report deleted.')}
- const saveListing=data=>{if(data.remove){setPets(v=>v.filter(p=>p.id!==data.id));setModal(null);notify('Listing deleted.');return}const row={...data,id:data.id||`pet-${Date.now()}`,orgId:currentOrg.id,status:data.status||'Available'};setPets(v=>data.id?v.map(p=>p.id===data.id?row:p):[row,...v]);setModal(null);notify('Your organization listing was saved.')}
- const updateInquiry=(id,status)=>setInquiries(v=>v.map(i=>i.id===id?{...i,status}:i))
- const changeAccountAccess=(user,action)=>{if(user.role==='admin'){if(user.status!=='Active')setUsers(v=>v.map(x=>x.id===user.id?{...x,status:'Active'}:x));notify('Administrator access is protected.');return}if(action==='delete'){if(!window.confirm(`Delete ${user.name} and their associated records? This cannot be undone in this browser.`))return;setUsers(v=>v.filter(x=>x.id!==user.id));if(user.orgId){setOrgs(v=>v.filter(org=>org.id!==user.orgId));setPets(v=>v.filter(pet=>pet.orgId!==user.orgId));setReports(v=>v.map(report=>report.orgId===user.orgId?{...report,orgId:null,assignmentStatus:'Available'}:report));setInquiries(v=>v.filter(inquiry=>inquiry.orgId!==user.orgId));setMessages(v=>v.filter(message=>message.orgId!==user.orgId))}else{setReports(v=>v.filter(report=>report.userId!==user.id));setInquiries(v=>v.filter(inquiry=>inquiry.userId!==user.id));setMessages(v=>v.filter(message=>message.senderId!==user.id&&message.participantId!==user.id))}notify('Account deleted.');return}const status=action==='approve'?'Active':action==='reject'?'Rejected':action==='restore'?'Active':action==='suspend'?'Suspended':user.status==='Pending'?'Active':user.status==='Suspended'?'Active':'Suspended';setUsers(v=>v.map(x=>x.id===user.id?{...x,status}:x));if(user.role==='organization'&&user.orgId)setOrgs(v=>v.map(o=>o.id===user.orgId?{...o,approved:status==='Active'}:o))}
-  const navItems=session?.role==='organization'?orgLinks:session?.role==='admin'?adminLinks:session?.role==='user'?['Home','Animal Reports','Adoption','Shelter Directory','About']:publicLinks
-  const menuItems=session?.role==='organization'?['Messages','Organization Profile','Settings']:session?.role==='admin'?['Administrator','Account management','Profile','Settings']:['Dashboard','My Reports','Profile','Messages','Settings']
-  const header=<><header className="nav"><button className="brand" onClick={()=>go('Home')}><span className="brandmark"><PawPrint size={21}/></span><span>Paw<em>Rescue</em></span></button><button className="icon-button mobile-toggle" onClick={()=>setMobile(v=>!v)}><Menu/></button><nav className={mobile?'navlinks open':'navlinks'}>{navItems.map(n=><button key={n} className={page===n||(n==='Adoption'&&page==='Adopt')?'active':''} onClick={()=>go(n==='Adoption'?'Adopt':n)}>{n}</button>)}</nav><div className="navright">{session?<><span className="account-name">{session.name}</span>{session.role!=='admin'&&alerts.some(a=>(session.role==='organization'?a.orgId===session.orgId:a.userId===session.id)&&!a.read)&&<button className="notification-button" onClick={()=>go(session.role==='organization'?'Overview':'Dashboard')} aria-label="Open notifications">🔔 <span>{alerts.filter(a=>(session.role==='organization'?a.orgId===session.orgId:a.userId===session.id)&&!a.read).length}</span></button>}<div className="menu-wrap"><button className="icon-button menu-trigger" aria-label="My PawRescue menu" onClick={()=>setMenu(v=>!v)}><span className="dots">•••</span></button>{menu&&<><button className="menu-dismiss" onClick={()=>setMenu(false)} aria-label="Close menu"/><div className="account-menu"><div className="menu-heading"><b>{session.name}</b><small>{session.role==='organization'?'Organization account':session.role==='admin'?'Administrator':'Member account'}</small></div>{menuItems.map(item=><button key={item} onClick={()=>go(item)}>{item}</button>)}<hr/><button className="logout-item" onClick={()=>{setSession(null);setMenu(false);setPage('Home');notify('You have logged out.')}}>Log out</button></div></>}</div></>:<><button className="btn btn-ghost login-button" onClick={()=>go('Log in')}>Log in</button><button className="btn btn-primary" onClick={()=>go('Register')}>Join us</button></>}</div></header></>
- const petsOwned=session?.role==='organization'?pets.filter(p=>p.orgId===session.orgId):pets
- const reportsOwned=session?.role==='organization'?reports.filter(r=>r.orgId===session.orgId):session?.role==='user'?reports.filter(r=>r.userId===session.id):[]
- const protectedPage=protectedPages.includes(page)
- let content
- if(page==='Home')content=<HomePage pets={publicPets} orgs={publicOrgs} reports={publicReports} announcements={announcements} favorites={favorites} toggleFavorite={favorite} onAdopt={startAdoptionInquiry} onDetails={animal=>setModal({type:'animal',animal})} onMessage={messageOrg} onNavigate={go} onOrg={o=>{setDetailOrg(o);go('Organization detail')}}/>
-  else if(page==='Animal Reports')content=<PublicReportsPage reports={publicReports} onReport={()=>go('Report an animal')} onView={report=>setModal({type:'report',report})}/>
-  else if(page==='Adopt')content=<AdoptPage key={adoptOrg||'all'} pets={publicPets} orgs={publicOrgs} favorites={favorites} toggleFavorite={favorite} onDetails={animal=>setModal({type:'animal',animal})} onMessage={messageOrg} onAdopt={startAdoptionInquiry} initialOrg={adoptOrg}/>
- else if(page==='Shelter Directory')content=<DirectoryPage orgs={publicOrgs} onView={o=>{setDetailOrg(o);go('Organization detail')}} onAnimals={o=>go('Adopt',o.id)} onMessage={messageOrg}/>
-  else if(page==='Organization detail'&&detailOrg)content=<OrganizationDetail org={detailOrg} pets={publicPets} favorites={favorites} onFavorite={favorite} onDetails={animal=>setModal({type:'animal',animal})} onMessage={messageOrg} onAdopt={startAdoptionInquiry} onAnimals={()=>go('Adopt',detailOrg.id)} onBack={()=>go('Shelter Directory')}/>
-  else if(page==='About')content=<AboutPage/>
- else if(page==='Report an animal')content=session?.role==='user'?<ReportPage orgs={publicOrgs} onSubmit={submitReport}/>:!session?<AuthPage onLogin={login} onRegister={register} onNavigate={go}/>:<main className="page-shell narrow-shell"><PageIntro eyebrow="User accounts" title="Report an animal" text="Report submissions are available to regular user accounts." action={<button className="btn btn-primary" onClick={()=>go('Overview')}>Return to workspace</button>}/></main>
- else if(page==='Log in')content=<HomePage pets={publicPets} orgs={publicOrgs} reports={publicReports} announcements={announcements} favorites={favorites} toggleFavorite={favorite} onAdopt={startAdoptionInquiry} onDetails={animal=>setModal({type:'animal',animal})} onMessage={messageOrg} onNavigate={go} onOrg={o=>{setDetailOrg(o);go('Organization detail')}}/>
- else if(page==='Register')content=<AuthPage key={page} initialMode="register" onLogin={login} onRegister={register} onNavigate={go}/>
- else if(page==='Dashboard'&&session?.role==='user')content=<UserDashboard reports={reportsOwned} inquiries={inquiries.filter(i=>i.userId===session?.id)} favorites={favorites} pets={pets} alerts={alerts.filter(a=>a.userId===session.id)} onDismissAlert={id=>setAlerts(v=>v.map(a=>a.id===id?{...a,read:true}:a))} onNavigate={go} onReport={report=>setModal({type:'report',report})} onDetails={animal=>setModal({type:'animal',animal})}/>
-  else if(page==='My Reports'&&session?.role==='user')content=<MyReportsPage reports={reportsOwned} onReport={report=>setModal({type:'report',report})} onNavigate={go}/>
-  else if(page==='Profile'&&session?.role==='user')content=<ProfilePage user={session} onSave={saveProfile}/>
- else if(page==='Favorites'&&session?.role==='user')content=<FavoritesPage favorites={favorites} pets={pets} toggleFavorite={favorite} onDetails={animal=>setModal({type:'animal',animal})} onMessage={messageOrg}/>
-  else if(page==='Settings'&&session?.role==='user')content=<SettingsPage settings={settings} onSave={v=>{setSettings(v);notify('Settings saved.')}}/>
-  else if(page==='Messages'&&session?.role!=='organization')content=session?.role==='user'?<MessagesPage messages={messages} onSend={sendMessage} orgId={activeMessageOrg} selectOrg={setActiveMessageOrg} session={session} orgs={publicOrgs} users={users}/>:!session?<AuthPage onLogin={login} onRegister={register} onNavigate={go}/>:<main className="page-shell narrow-shell"><PageIntro eyebrow="Account access" title="Messages" text="Built-in chat is available to regular users and participating organizations."/></main>
-  else if(session?.role==='organization'&&orgLinks.includes(page))content=<OrganizationDashboard page={page} setPage={go} organizations={orgs} reports={reports} pets={pets} inquiries={inquiries} messages={messages} users={users} alerts={alerts.filter(a=>a.orgId===session.orgId)} onDismissAlert={id=>setAlerts(v=>v.map(a=>a.id===id?{...a,read:true}:a))} messagesView={<MessagesPage hideIntro messages={messages} onSend={sendMessage} orgId={session.orgId} selectOrg={setActiveMessageOrg} session={session} orgs={orgs} users={users}/>} settings={settings} user={session} onStatus={updateStatus} onReportDecision={organizationReportDecision} onViewReport={report=>setModal({type:'report',report})} onViewAnimal={animal=>setModal({type:'animal',animal})} onListing={listing=>setModal({type:'listing',listing})} onInquiry={updateInquiry} onViewInquiry={inquiry=>setModal({type:'inquiry-details',inquiry})} onMessageApplicant={inquiry=>go('Messages',inquiry.orgId)} onNavigate={go} onSaveOrg={saveOrgProfile} onSaveSettings={v=>setSettings(x=>({...x,...v}))} onLogout={()=>{setSession(null);setPage('Home')}} orgId={session.orgId}/>
-  else if(session?.role==='admin'&&adminLinks.includes(page))content=<AdminDashboard page={page} setPage={go} users={users} reports={reports} organizations={orgs} announcements={announcements} settings={settings} onSaveSettings={v=>setSettings(x=>({...x,...v}))} onSaveOrg={saveOrgProfile} onSaveAnnouncement={saveAnnouncement} onDeleteAnnouncement={removeAnnouncement} onAction={changeAccountAccess} onReviewReport={reviewReport} onDeleteReport={deleteReport} onViewReport={report=>setModal({type:'report',report})} onViewAccount={user=>setModal({type:'account-details',user})} onSendAlert={user=>setModal({type:'alert-compose',user})} onLogout={()=>{setSession(null);setPage('Home')}}/>
- else if(protectedPage&&!session)content=<AuthPage onLogin={login} onRegister={register} onNavigate={go}/>
- else content=<HomePage pets={publicPets} orgs={publicOrgs} reports={publicReports} announcements={announcements} favorites={favorites} toggleFavorite={favorite} onAdopt={startAdoptionInquiry} onDetails={animal=>setModal({type:'animal',animal})} onMessage={messageOrg} onNavigate={go} onOrg={o=>{setDetailOrg(o);go('Organization detail')}}/>
- const staff=session?.role==='organization'||session?.role==='admin'
-  return <>{staff?null:header}{content}{!staff&&page!=='Register'&&<Footer onNavigate={go} />}{(session?.role==='user'||session?.role==='organization')&&page!=='Messages'&&<MessageDock session={session} orgs={publicOrgs} users={users} messages={messages} activeOrg={activeMessageOrg} onSelectOrg={setActiveMessageOrg} onSend={sendMessage} onOpenInbox={()=>go('Messages')} />}{toast&&<div className="toast">{toast}</div>}{(modal||page==='Log in')&&<Modal onClose={()=>{if(page==='Log in')setPage('Home');setModal(null)}} wide={modal?.type==='animal'||modal?.type==='listing'||modal?.type==='report-form'||modal?.type==='report'||modal?.type==='inquiry-details'} className={!modal&&page==='Log in'?'auth-modal':''}>{!modal&&page==='Log in'?<AuthPage key="login-modal" initialMode="login" onLogin={login} onRegister={register} onNavigate={go}/>:modal?.type==='animal'?<AnimalDetails animal={modal.animal} orgs={orgs} isFavorite={favorites.includes(modal.animal.id)} onFavorite={()=>favorite(modal.animal.id)} onMessage={()=>messageOrg(orgs.find(o=>o.id===modal.animal.orgId))} onInquiry={startAdoptionInquiry}/>:modal?.type==='inquiry'?<InquiryForm pet={modal.pet} orgs={orgs} onSubmit={submitInquiry} onClose={()=>setModal(null)}/>:modal?.type==='report'?<ReportDetail report={modal.report} submitter={users.find(u=>u.id===modal.report.userId)} assignedOrganization={orgs.find(o=>o.id===modal.report.orgId)?.name}/>:modal?.type==='inquiry-details'?<InquiryDetail inquiry={modal.inquiry}/>:modal?.type==='account-details'?<AccountDetails user={modal.user}/>:modal?.type==='alert-compose'?<AlertComposer account={modal.user} onSubmit={message=>{sendAlert(modal.user,message);setModal(null)}}/>:modal?.type==='report-form'?<ReportPage orgs={publicOrgs} onSubmit={submitReport} inModal/>:modal?.type==='listing'?<ListingEditor listing={modal.listing} onSave={saveListing} onClose={()=>setModal(null)}/>:<div className="modal-copy"><h2>Done</h2><p>{modal?.text}</p><button className="btn btn-primary" onClick={()=>setModal(null)}>Close</button></div>}</Modal>}</>
+export default function App() {
+    const [page, setPage] = useState(() =>
+            readUser()?.role === "organization"
+                ? "Overview"
+                : readUser()?.role === "admin"
+                  ? "Administrator"
+                  : "Home",
+        ),
+        [session, setSession] = useState(readUser),
+        [menu, setMenu] = useState(false),
+        [mobile, setMobile] = useState(false),
+        [pendingAction, setPendingAction] = useState(null),
+        [toast, setToast] = useState("");
+    const [pets, setPets] = useState(() => readStore("pets", initialPets)),
+        [reports, setReports] = useState(() =>
+            readStore("reports", initialReports),
+        ),
+        [orgs, setOrgs] = useState(() =>
+            readStore("organizations", seedOrganizations),
+        ),
+        [favorites, setFavorites] = useState(() => readStore("favorites", [])),
+        [inquiries, setInquiries] = useState(() => readStore("inquiries", [])),
+        [messages, setMessages] = useState(() => readStore("messages", [])),
+        [users, setUsers] = useState(() =>
+            readStore("users", [
+                {
+                    id: "user-1",
+                    name: "Samira Santos",
+                    email: "samira@example.com",
+                    role: "user",
+                    status: "Active",
+                },
+                {
+                    id: "org-user-1",
+                    name: "Iloilo Animal Care Network",
+                    email: "hello@iloiloanimalcare.org",
+                    role: "organization",
+                    orgId: "org-1",
+                    status: "Active",
+                },
+                {
+                    id: "admin-1",
+                    name: "Platform administrator",
+                    email: "admin@pawrescue.local",
+                    role: "admin",
+                    status: "Active",
+                },
+            ]).map((user) =>
+                user.role === "admin" ? { ...user, status: "Active" } : user,
+            ),
+        );
+    const [announcements, setAnnouncements] = useState(() =>
+        readStore("announcements", []),
+    );
+    const [alerts, setAlerts] = useState(() => readStore("alerts", []));
+    const [modal, setModal] = useState(null),
+        [adoptOrg, setAdoptOrg] = useState(null),
+        [detailOrg, setDetailOrg] = useState(null),
+        [activeMessageOrg, setActiveMessageOrg] = useState("org-1"),
+        [messageDockOpen, setMessageDockOpen] = useState(false),
+        [settings, setSettings] = useState(() => ({
+            emailUpdates: true,
+            compactView: false,
+            theme: "light",
+            fontSize: "medium",
+            ...readStore("settings", {}),
+        }));
+    useEffect(() => writeStore("pets", pets), [pets]);
+    useEffect(() => writeStore("reports", reports), [reports]);
+    useEffect(() => writeStore("organizations", orgs), [orgs]);
+    useEffect(() => writeStore("favorites", favorites), [favorites]);
+    useEffect(() => writeStore("inquiries", inquiries), [inquiries]);
+    useEffect(() => writeStore("messages", messages), [messages]);
+    useEffect(() => writeStore("users", users), [users]);
+    useEffect(
+        () => writeStore("announcements", announcements),
+        [announcements],
+    );
+    useEffect(() => writeStore("alerts", alerts), [alerts]);
+    useEffect(() => writeStore("settings", settings), [settings]);
+    useEffect(() => {
+        session
+            ? writeStore("session", session)
+            : localStorage.removeItem("pawrescue:session");
+    }, [session]);
+    useEffect(() => {
+        document.body.classList.toggle(
+            "compact-view",
+            Boolean(settings.compactView),
+        );
+        document.documentElement.dataset.theme = settings.theme || "light";
+        document.documentElement.dataset.fontSize =
+            settings.fontSize || "medium";
+    }, [settings]);
+    const notify = (text) => {
+        setToast(text);
+        window.setTimeout(() => setToast(""), 3000);
+    };
+    const toggleTheme = () =>
+        setSettings((v) => ({
+            ...v,
+            theme: v.theme === "dark" ? "light" : "dark",
+        }));
+    const go = (target, arg) => {
+        if (target === "Report an animal") {
+            setMenu(false);
+            setMobile(false);
+            if (!session) {
+                setPendingAction({ target });
+                setPage("Log in");
+            } else if (session.role === "user")
+                setModal({ type: "report-form" });
+            else notify("Only regular user accounts can submit reports.");
+            return;
+        }
+        let next = target;
+        if (session?.role === "organization" && target === "Home")
+            next = "Overview";
+        else if (
+            session?.role === "organization" &&
+            !orgLinks.includes(target) &&
+            !["Log in", "Register"].includes(target)
+        )
+            next = "Overview";
+        else if (
+            session?.role === "admin" &&
+            !adminLinks.includes(target) &&
+            !["Log in", "Register"].includes(target)
+        )
+            next = "Administrator";
+        else if (
+            session?.role === "user" &&
+            [
+                ...orgLinks.filter(
+                    (item) =>
+                        !["Messages", "Settings", "Profile"].includes(item),
+                ),
+                ...adminLinks.filter((item) => item !== "Settings"),
+            ].includes(target)
+        )
+            next = "Dashboard";
+        else if (!session && protectedPages.includes(target)) next = "Log in";
+        setMenu(false);
+        setMobile(false);
+        if (next === "Adopt" && arg) setAdoptOrg(arg);
+        else if (next === "Adopt") setAdoptOrg(null);
+        if (next === "Messages" && arg) setActiveMessageOrg(arg.id || arg);
+        setPage(next);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    const requireAuth = (target, arg) => {
+        if (!session) {
+            setPendingAction({ target, arg });
+            setModal(null);
+            go("Log in");
+            return false;
+        }
+        return true;
+    };
+    const messageOrg = (org) => {
+        const id = org?.id || org || "org-1";
+        if (!requireAuth("Messages", id)) return;
+        setActiveMessageOrg(id);
+        setModal(null);
+        setMessageDockOpen(true);
+    };
+    const favorite = (id) => {
+        if (!session) {
+            requireAuth("Favorites", id);
+            return;
+        }
+        if (session.role !== "user") {
+            notify("Favorites are available to regular user accounts.");
+            return;
+        }
+        setFavorites((v) =>
+            v.includes(id) ? v.filter((x) => x !== id) : [...v, id],
+        );
+        notify(
+            favorites.includes(id)
+                ? "Removed from Favorites."
+                : "Saved to Favorites.",
+        );
+    };
+    const startAdoptionInquiry = (pet) => {
+        if (!session) {
+            requireAuth("Adoption Inquiry", pet);
+            return;
+        }
+        if (session.role !== "user") {
+            notify("Only regular user accounts can submit adoption forms.");
+            return;
+        }
+        setModal({ type: "inquiry", pet });
+    };
+    const currentOrg = orgs.find((o) => o.id === session?.orgId) || orgs[0],
+        publicOrgs = orgs.filter((o) => o.approved !== false),
+        publicPets = pets.filter((p) => {
+            const org = orgs.find((o) => o.id === p.orgId);
+            return org?.approved !== false && org?.listingVisible !== false;
+        }),
+        publicReports = reports.filter(
+            (r) =>
+                r.approvalStatus === "Approved" &&
+                orgs.find((o) => o.id === r.orgId)?.approved !== false,
+        );
+    const login = (user) => {
+        const matched = users.find(
+            (x) => x.email?.toLowerCase() === user.email?.toLowerCase(),
+        );
+        if (!matched) {
+            notify("No account found. Create an account first.");
+            return;
+        }
+        if (matched.role !== "admin" && matched.role !== user.role) {
+            notify(
+                matched.role === "organization"
+                    ? "This is an organization account. Choose Organization to sign in."
+                    : "This is a resident account. Choose Resident to sign in.",
+            );
+            return;
+        }
+        if (
+            matched.role !== "admin" &&
+            ["Suspended", "Pending", "Rejected"].includes(matched.status)
+        ) {
+            notify(
+                matched.status === "Pending"
+                    ? "This organization account is awaiting approval."
+                    : matched.status === "Rejected"
+                      ? "This organization account was not approved."
+                      : "This account is suspended and cannot sign in.",
+            );
+            return;
+        }
+        if (matched.password && matched.password !== user.password) {
+            notify("The password is incorrect.");
+            return;
+        }
+        const active = { ...user, ...matched };
+        delete active.password;
+        setSession(active);
+        setMenu(false);
+        setPage(
+            active.role === "organization"
+                ? "Overview"
+                : active.role === "admin"
+                  ? "Administrator"
+                  : "Dashboard",
+        );
+        if (pendingAction) {
+            const pending = pendingAction;
+            setPendingAction(null);
+            if (pending.target === "Messages") {
+                setActiveMessageOrg(pending.arg);
+                setMessageDockOpen(true);
+            } else if (pending.target === "Favorites") {
+                setFavorites((v) =>
+                    v.includes(pending.arg) ? v : [...v, pending.arg],
+                );
+                setPage("Favorites");
+            } else if (pending.target === "Adoption Inquiry") {
+                if (active.role === "user") {
+                    setPage("Adopt");
+                    setModal({ type: "inquiry", pet: pending.arg });
+                } else
+                    notify(
+                        "Only regular user accounts can submit adoption forms.",
+                    );
+            } else if (pending.target === "Report an animal") {
+                if (active.role === "user") {
+                    setPage("Animal Reports");
+                    setModal({ type: "report-form" });
+                } else notify("Only regular user accounts can submit reports.");
+            }
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    const register = (user) => {
+        const id = `${user.role}-${Date.now()}`,
+            orgId =
+                user.role === "organization" ? `org-${Date.now()}` : undefined;
+        const created = {
+            ...user,
+            id,
+            orgId,
+            status: user.role === "organization" ? "Pending" : "Active",
+        };
+        if (user.role === "organization")
+            setOrgs((v) => [
+                ...v,
+                {
+                    id: orgId,
+                    name: user.name,
+                    category: user.category || "Rescue organization",
+                    icon: "🐾",
+                    place: [user.address, user.city, user.region]
+                        .filter(Boolean)
+                        .join(", "),
+                    address: user.address,
+                    city: user.city,
+                    region: user.region,
+                    representative: user.representative,
+                    phone: user.phone,
+                    email: user.email,
+                    description: user.description || "",
+                    services: (user.services || "")
+                        .split(",")
+                        .map((x) => x.trim())
+                        .filter(Boolean),
+                    approved: false,
+                },
+            ]);
+        setUsers((v) => [...v, created]);
+        if (created.role === "organization") {
+            setSession(null);
+            go("Log in");
+            notify(
+                "Organization account submitted for administrator approval.",
+            );
+            return;
+        }
+        const active = { ...created };
+        delete active.password;
+        setSession(active);
+        setPage("Dashboard");
+        if (pendingAction?.target === "Report an animal") {
+            setPendingAction(null);
+            setPage("Animal Reports");
+            setModal({ type: "report-form" });
+        }
+        notify("Account created in this browser.");
+    };
+    const saveProfile = (user) => {
+        setSession(user);
+        setUsers((v) =>
+            v.map((x) => (x.id === user.id ? { ...x, ...user } : x)),
+        );
+        if (user.role === "organization" && user.orgId)
+            setOrgs((v) =>
+                v.map((org) =>
+                    org.id === user.orgId
+                        ? {
+                              ...org,
+                              name: user.name,
+                              email: user.email,
+                              phone: user.phone,
+                              address: user.address,
+                          }
+                        : org,
+                ),
+            );
+        notify("Profile saved in this browser.");
+    };
+    const saveOrgProfile = (updated) => {
+        const saved = {
+            ...updated,
+            place: [updated.address, updated.city, updated.region]
+                .filter(Boolean)
+                .join(", "),
+        };
+        setOrgs((v) => v.map((o) => (o.id === saved.id ? saved : o)));
+        setUsers((v) =>
+            v.map((user) =>
+                user.orgId === saved.id
+                    ? {
+                          ...user,
+                          name: saved.name,
+                          email: saved.email,
+                          phone: saved.phone,
+                          address: saved.address,
+                          city: saved.city,
+                          region: saved.region,
+                      }
+                    : user,
+            ),
+        );
+        setSession((current) =>
+            current?.orgId === saved.id
+                ? {
+                      ...current,
+                      name: saved.name,
+                      email: saved.email,
+                      phone: saved.phone,
+                      address: saved.address,
+                      city: saved.city,
+                      region: saved.region,
+                  }
+                : current,
+        );
+        notify("Organization profile saved in this browser.");
+    };
+    const saveAnnouncement = (announcement) => {
+        setAnnouncements((v) => [
+            { ...announcement, id: `announcement-${Date.now()}` },
+            ...v,
+        ]);
+        notify("Announcement published.");
+    };
+    const removeAnnouncement = (id) =>
+        setAnnouncements((v) => v.filter((item) => item.id !== id));
+    const sendAlert = (user, message) => {
+        if (!message?.trim()) return;
+        setAlerts((v) => [
+            {
+                id: `alert-${Date.now()}`,
+                userId: user.id,
+                orgId: user.orgId || null,
+                role: user.role,
+                title: "PawRescue notice",
+                message: message.trim(),
+                date: new Date().toLocaleString(),
+                read: false,
+            },
+            ...v,
+        ]);
+        notify(`Notice sent to ${user.name}.`);
+    };
+    const submitReport = (record) => {
+        const org = orgs.find((o) => o.id === record.orgId) || orgs[0];
+        const row = {
+            ...record,
+            id: `PR-${Math.floor(1000 + Math.random() * 8999)}`,
+            place: record.address,
+            date: new Date().toLocaleString(),
+            status: "Pending",
+            tone: "amber",
+            userId: session?.id,
+            orgId: org.id,
+            approvalStatus: "Pending",
+            publicDisplay: false,
+            lat: record.location.lat,
+            lng: record.location.lng,
+        };
+        setReports((v) => [row, ...v]);
+        setModal(null);
+        notify("Report recorded and sent for review.");
+        go("My Reports");
+    };
+    const submitInquiry = (data) => {
+        if (session?.role !== "user") {
+            notify("Only regular user accounts can submit adoption forms.");
+            return;
+        }
+        const org = orgs.find((o) => o.id === data.pet.orgId);
+        const inquiry = {
+            ...data,
+            id: `IN-${Date.now()}`,
+            userId: session.id,
+            orgId: org.id,
+            listingId: data.pet.id,
+            petName: data.pet.name,
+            orgName: org.name,
+            date: new Date().toLocaleDateString(),
+            status: "Pending",
+        };
+        setInquiries((v) => [inquiry, ...v]);
+        setMessages((v) => [
+            ...v,
+            {
+                id: `msg-${Date.now()}`,
+                orgId: org.id,
+                senderId: session.id,
+                participantId: session.id,
+                text: `Adoption inquiry for ${data.pet.name}: ${data.reason || "I would like to learn more."}`,
+                time: "Just now",
+            },
+        ]);
+        setModal({
+            type: "success",
+            text: `Your inquiry about ${data.pet.name} was saved for ${org.name}.`,
+        });
+    };
+    const sendMessage = (data) => {
+        setMessages((v) => [
+            ...v,
+            { ...data, id: `msg-${Date.now()}`, time: "Just now" },
+        ]);
+    };
+    const updateStatus = (id, status) =>
+        setReports((v) =>
+            v.map((r) =>
+                r.id === id
+                    ? {
+                          ...r,
+                          status,
+                          tone:
+                              status === "Pending"
+                                  ? "amber"
+                                  : status === "Responding"
+                                    ? "blue"
+                                    : status === "Rescued"
+                                      ? "purple"
+                                      : status === "Cancelled"
+                                        ? "red"
+                                        : "green",
+                      }
+                    : r,
+            ),
+        );
+    const reviewReport = (id, approvalStatus) =>
+        setReports((v) =>
+            v.map((r) =>
+                r.id === id
+                    ? {
+                          ...r,
+                          approvalStatus,
+                          publicDisplay: approvalStatus === "Approved",
+                          status:
+                              r.status === "Pending"
+                                  ? approvalStatus
+                                  : r.status,
+                      }
+                    : r,
+            ),
+        );
+    const organizationReportDecision = (id, action) =>
+        setReports((v) =>
+            v.map((report) => {
+                if (report.id !== id) return report;
+                if (action === "accept")
+                    return {
+                        ...report,
+                        orgId: session.orgId,
+                        status: "Responding",
+                        tone: "blue",
+                        assignmentStatus: "Accepted",
+                        declinedBy: (report.declinedBy || []).filter(
+                            (id) => id !== session.orgId,
+                        ),
+                    };
+                if (action === "reject")
+                    return {
+                        ...report,
+                        orgId: null,
+                        assignmentStatus: "Available",
+                        declinedBy: [
+                            ...new Set([
+                                ...(report.declinedBy || []),
+                                session.orgId,
+                            ]),
+                        ],
+                    };
+                return {
+                    ...report,
+                    status: "Cancelled",
+                    assignmentStatus: "Cancelled",
+                    cancelledByOrgId: session.orgId,
+                };
+            }),
+        );
+    const deleteReport = (id) => {
+        const report = reports.find((row) => row.id === id);
+        if (
+            !report ||
+            !window.confirm(
+                `Delete report ${id}? This cannot be undone in this browser.`,
+            )
+        )
+            return;
+        setReports((rows) => rows.filter((row) => row.id !== id));
+        notify("Report deleted.");
+    };
+    const saveListing = (data) => {
+        if (data.remove) {
+            setPets((v) => v.filter((p) => p.id !== data.id));
+            setModal(null);
+            notify("Listing deleted.");
+            return;
+        }
+        const row = {
+            ...data,
+            id: data.id || `pet-${Date.now()}`,
+            orgId: currentOrg.id,
+            status: data.status || "Available",
+        };
+        setPets((v) =>
+            data.id ? v.map((p) => (p.id === data.id ? row : p)) : [row, ...v],
+        );
+        setModal(null);
+        notify("Your organization listing was saved.");
+    };
+    const updateInquiry = (id, status) =>
+        setInquiries((v) => v.map((i) => (i.id === id ? { ...i, status } : i)));
+    const changeAccountAccess = (user, action) => {
+        if (user.role === "admin") {
+            if (user.status !== "Active")
+                setUsers((v) =>
+                    v.map((x) =>
+                        x.id === user.id ? { ...x, status: "Active" } : x,
+                    ),
+                );
+            notify("Administrator access is protected.");
+            return;
+        }
+        if (action === "delete") {
+            if (
+                !window.confirm(
+                    `Delete ${user.name} and their associated records? This cannot be undone in this browser.`,
+                )
+            )
+                return;
+            setUsers((v) => v.filter((x) => x.id !== user.id));
+            if (user.orgId) {
+                setOrgs((v) => v.filter((org) => org.id !== user.orgId));
+                setPets((v) => v.filter((pet) => pet.orgId !== user.orgId));
+                setReports((v) =>
+                    v.map((report) =>
+                        report.orgId === user.orgId
+                            ? {
+                                  ...report,
+                                  orgId: null,
+                                  assignmentStatus: "Available",
+                              }
+                            : report,
+                    ),
+                );
+                setInquiries((v) =>
+                    v.filter((inquiry) => inquiry.orgId !== user.orgId),
+                );
+                setMessages((v) =>
+                    v.filter((message) => message.orgId !== user.orgId),
+                );
+            } else {
+                setReports((v) =>
+                    v.filter((report) => report.userId !== user.id),
+                );
+                setInquiries((v) =>
+                    v.filter((inquiry) => inquiry.userId !== user.id),
+                );
+                setMessages((v) =>
+                    v.filter(
+                        (message) =>
+                            message.senderId !== user.id &&
+                            message.participantId !== user.id,
+                    ),
+                );
+            }
+            notify("Account deleted.");
+            return;
+        }
+        const status =
+            action === "approve"
+                ? "Active"
+                : action === "reject"
+                  ? "Rejected"
+                  : action === "restore"
+                    ? "Active"
+                    : action === "suspend"
+                      ? "Suspended"
+                      : user.status === "Pending"
+                        ? "Active"
+                        : user.status === "Suspended"
+                          ? "Active"
+                          : "Suspended";
+        setUsers((v) =>
+            v.map((x) => (x.id === user.id ? { ...x, status } : x)),
+        );
+        if (user.role === "organization" && user.orgId)
+            setOrgs((v) =>
+                v.map((o) =>
+                    o.id === user.orgId
+                        ? { ...o, approved: status === "Active" }
+                        : o,
+                ),
+            );
+    };
+    const navItems =
+        session?.role === "organization"
+            ? orgLinks
+            : session?.role === "admin"
+              ? adminLinks
+              : session?.role === "user"
+                ? [
+                      "Home",
+                      "Animal Reports",
+                      "Adoption",
+                      "Shelter Directory",
+                      "About",
+                  ]
+                : publicLinks;
+    const menuItems =
+        session?.role === "organization"
+            ? ["Messages", "Organization Profile", "Settings"]
+            : session?.role === "admin"
+              ? ["Administrator", "Account management", "Profile", "Settings"]
+              : ["Dashboard", "My Reports", "Profile", "Messages", "Settings"];
+    const themeToggle = (
+        <button
+            type="button"
+            className="icon-button theme-toggle"
+            onClick={toggleTheme}
+            aria-label={
+                settings.theme === "dark"
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+            }
+            title={
+                settings.theme === "dark"
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+            }
+        >
+            {settings.theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+    );
+    const header = (
+        <>
+            <header className="nav">
+                <button className="brand" onClick={() => go("Home")}>
+                    <span className="brandmark">
+                        <PawPrint size={21} />
+                    </span>
+                    <span>
+                        Paw<em>Rescue</em>
+                    </span>
+                </button>
+                <button
+                    className="icon-button mobile-toggle"
+                    onClick={() => setMobile((v) => !v)}
+                >
+                    <Menu />
+                </button>
+                <nav className={mobile ? "navlinks open" : "navlinks"}>
+                    {navItems.map((n) => (
+                        <button
+                            key={n}
+                            className={
+                                page === n ||
+                                (n === "Adoption" && page === "Adopt")
+                                    ? "active"
+                                    : ""
+                            }
+                            onClick={() => go(n === "Adoption" ? "Adopt" : n)}
+                        >
+                            {n}
+                        </button>
+                    ))}
+                </nav>
+                <div className="navright">
+                    {session ? (
+                        <>
+                            <span className="account-name">{session.name}</span>
+                            {session.role !== "admin" &&
+                                alerts.some(
+                                    (a) =>
+                                        (session.role === "organization"
+                                            ? a.orgId === session.orgId
+                                            : a.userId === session.id) &&
+                                        !a.read,
+                                ) && (
+                                    <button
+                                        className="notification-button"
+                                        onClick={() =>
+                                            go(
+                                                session.role === "organization"
+                                                    ? "Overview"
+                                                    : "Dashboard",
+                                            )
+                                        }
+                                        aria-label="Open notifications"
+                                    >
+                                        🔔{" "}
+                                        <span>
+                                            {
+                                                alerts.filter(
+                                                    (a) =>
+                                                        (session.role ===
+                                                        "organization"
+                                                            ? a.orgId ===
+                                                              session.orgId
+                                                            : a.userId ===
+                                                              session.id) &&
+                                                        !a.read,
+                                                ).length
+                                            }
+                                        </span>
+                                    </button>
+                                )}
+                            <div className="menu-wrap">
+                                <button
+                                    className="icon-button menu-trigger"
+                                    aria-label="Open account dashboard menu"
+                                    onClick={() => setMenu((v) => !v)}
+                                >
+                                    <LayoutDashboard size={19} />
+                                </button>
+                                {menu && (
+                                    <>
+                                        <button
+                                            className="menu-dismiss"
+                                            onClick={() => setMenu(false)}
+                                            aria-label="Close menu"
+                                        />
+                                        <div className="account-menu">
+                                            <div className="menu-heading">
+                                                <b>{session.name}</b>
+                                                <small>
+                                                    {session.role ===
+                                                    "organization"
+                                                        ? "Organization account"
+                                                        : session.role ===
+                                                            "admin"
+                                                          ? "Administrator"
+                                                          : "Member account"}
+                                                </small>
+                                            </div>
+                                            {menuItems.map((item) => (
+                                                <button
+                                                    key={item}
+                                                    onClick={() => go(item)}
+                                                >
+                                                    {item}
+                                                </button>
+                                            ))}
+                                            <hr />
+                                            <button
+                                                className="logout-item"
+                                                onClick={() => {
+                                                    setSession(null);
+                                                    setMenu(false);
+                                                    setPage("Home");
+                                                    notify(
+                                                        "You have logged out.",
+                                                    );
+                                                }}
+                                            >
+                                                Log out
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            {themeToggle}
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                className="btn btn-ghost login-button"
+                                onClick={() => go("Log in")}
+                            >
+                                Log in
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => go("Register")}
+                            >
+                                Join us
+                            </button>
+                            {themeToggle}
+                        </>
+                    )}
+                </div>
+            </header>
+        </>
+    );
+    const petsOwned =
+        session?.role === "organization"
+            ? pets.filter((p) => p.orgId === session.orgId)
+            : pets;
+    const reportsOwned =
+        session?.role === "organization"
+            ? reports.filter((r) => r.orgId === session.orgId)
+            : session?.role === "user"
+              ? reports.filter((r) => r.userId === session.id)
+              : [];
+    const protectedPage = protectedPages.includes(page);
+    let content;
+    if (page === "Home")
+        content = (
+            <HomePage
+                pets={publicPets}
+                orgs={publicOrgs}
+                reports={publicReports}
+                announcements={announcements}
+                favorites={favorites}
+                toggleFavorite={favorite}
+                onAdopt={startAdoptionInquiry}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+                onMessage={messageOrg}
+                onNavigate={go}
+                onOrg={(o) => {
+                    setDetailOrg(o);
+                    go("Organization detail");
+                }}
+            />
+        );
+    else if (page === "Animal Reports")
+        content = (
+            <PublicReportsPage
+                reports={publicReports}
+                onReport={() => go("Report an animal")}
+                onView={(report) => setModal({ type: "report", report })}
+            />
+        );
+    else if (page === "Adopt")
+        content = (
+            <AdoptPage
+                key={adoptOrg || "all"}
+                pets={publicPets}
+                orgs={publicOrgs}
+                favorites={favorites}
+                toggleFavorite={favorite}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+                onMessage={messageOrg}
+                onAdopt={startAdoptionInquiry}
+                initialOrg={adoptOrg}
+            />
+        );
+    else if (page === "Shelter Directory")
+        content = (
+            <DirectoryPage
+                orgs={publicOrgs}
+                onView={(o) => {
+                    setDetailOrg(o);
+                    go("Organization detail");
+                }}
+                onAnimals={(o) => go("Adopt", o.id)}
+                onMessage={messageOrg}
+            />
+        );
+    else if (page === "Organization detail" && detailOrg)
+        content = (
+            <OrganizationDetail
+                org={detailOrg}
+                pets={publicPets}
+                favorites={favorites}
+                onFavorite={favorite}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+                onMessage={messageOrg}
+                onAdopt={startAdoptionInquiry}
+                onAnimals={() => go("Adopt", detailOrg.id)}
+                onBack={() => go("Shelter Directory")}
+            />
+        );
+    else if (page === "About") content = <AboutPage />;
+    else if (page === "Report an animal")
+        content =
+            session?.role === "user" ? (
+                <ReportPage orgs={publicOrgs} onSubmit={submitReport} />
+            ) : !session ? (
+                <AuthPage
+                    onLogin={login}
+                    onRegister={register}
+                    onNavigate={go}
+                />
+            ) : (
+                <main className="page-shell narrow-shell">
+                    <PageIntro
+                        eyebrow="User accounts"
+                        title="Report an animal"
+                        text="Report submissions are available to regular user accounts."
+                        action={
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => go("Overview")}
+                            >
+                                Return to workspace
+                            </button>
+                        }
+                    />
+                </main>
+            );
+    else if (page === "Log in")
+        content = (
+            <HomePage
+                pets={publicPets}
+                orgs={publicOrgs}
+                reports={publicReports}
+                announcements={announcements}
+                favorites={favorites}
+                toggleFavorite={favorite}
+                onAdopt={startAdoptionInquiry}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+                onMessage={messageOrg}
+                onNavigate={go}
+                onOrg={(o) => {
+                    setDetailOrg(o);
+                    go("Organization detail");
+                }}
+            />
+        );
+    else if (page === "Register")
+        content = (
+            <AuthPage
+                key={page}
+                initialMode="register"
+                onLogin={login}
+                onRegister={register}
+                onNavigate={go}
+            />
+        );
+    else if (page === "Dashboard" && session?.role === "user")
+        content = (
+            <UserDashboard
+                reports={reportsOwned}
+                inquiries={inquiries.filter((i) => i.userId === session?.id)}
+                favorites={favorites}
+                pets={pets}
+                alerts={alerts.filter((a) => a.userId === session.id)}
+                onDismissAlert={(id) =>
+                    setAlerts((v) =>
+                        v.map((a) => (a.id === id ? { ...a, read: true } : a)),
+                    )
+                }
+                onNavigate={go}
+                onReport={(report) => setModal({ type: "report", report })}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+            />
+        );
+    else if (page === "My Reports" && session?.role === "user")
+        content = (
+            <MyReportsPage
+                reports={reportsOwned}
+                onReport={(report) => setModal({ type: "report", report })}
+                onNavigate={go}
+            />
+        );
+    else if (page === "Profile" && session?.role === "user")
+        content = <ProfilePage user={session} onSave={saveProfile} />;
+    else if (page === "Favorites" && session?.role === "user")
+        content = (
+            <FavoritesPage
+                favorites={favorites}
+                pets={pets}
+                toggleFavorite={favorite}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+                onMessage={messageOrg}
+            />
+        );
+    else if (page === "Settings" && session?.role === "user")
+        content = (
+            <SettingsPage
+                settings={settings}
+                onSave={(v) => {
+                    setSettings(v);
+                    notify("Settings saved.");
+                }}
+            />
+        );
+    else if (page === "Messages" && session?.role !== "organization")
+        content =
+            session?.role === "user" ? (
+                <MessagesPage
+                    messages={messages}
+                    onSend={sendMessage}
+                    orgId={activeMessageOrg}
+                    selectOrg={setActiveMessageOrg}
+                    session={session}
+                    orgs={publicOrgs}
+                    users={users}
+                />
+            ) : !session ? (
+                <AuthPage
+                    onLogin={login}
+                    onRegister={register}
+                    onNavigate={go}
+                />
+            ) : (
+                <main className="page-shell narrow-shell">
+                    <PageIntro
+                        eyebrow="Account access"
+                        title="Messages"
+                        text="Built-in chat is available to regular users and participating organizations."
+                    />
+                </main>
+            );
+    else if (session?.role === "organization" && orgLinks.includes(page))
+        content = (
+            <OrganizationDashboard
+                page={page}
+                setPage={go}
+                organizations={orgs}
+                reports={reports}
+                pets={pets}
+                inquiries={inquiries}
+                messages={messages}
+                users={users}
+                alerts={alerts.filter((a) => a.orgId === session.orgId)}
+                onDismissAlert={(id) =>
+                    setAlerts((v) =>
+                        v.map((a) => (a.id === id ? { ...a, read: true } : a)),
+                    )
+                }
+                messagesView={
+                    <MessagesPage
+                        hideIntro
+                        messages={messages}
+                        onSend={sendMessage}
+                        orgId={session.orgId}
+                        selectOrg={setActiveMessageOrg}
+                        session={session}
+                        orgs={orgs}
+                        users={users}
+                    />
+                }
+                settings={settings}
+                user={session}
+                onStatus={updateStatus}
+                onReportDecision={organizationReportDecision}
+                onViewReport={(report) => setModal({ type: "report", report })}
+                onViewAnimal={(animal) => setModal({ type: "animal", animal })}
+                onListing={(listing) => setModal({ type: "listing", listing })}
+                onInquiry={updateInquiry}
+                onViewInquiry={(inquiry) =>
+                    setModal({ type: "inquiry-details", inquiry })
+                }
+                onMessageApplicant={(inquiry) => go("Messages", inquiry.orgId)}
+                onNavigate={go}
+                onSaveOrg={saveOrgProfile}
+                onSaveSettings={(v) => setSettings((x) => ({ ...x, ...v }))}
+                onLogout={() => {
+                    setSession(null);
+                    setPage("Home");
+                }}
+                orgId={session.orgId}
+            />
+        );
+    else if (session?.role === "admin" && adminLinks.includes(page))
+        content = (
+            <AdminDashboard
+                page={page}
+                setPage={go}
+                users={users}
+                reports={reports}
+                organizations={orgs}
+                announcements={announcements}
+                settings={settings}
+                onSaveSettings={(v) => setSettings((x) => ({ ...x, ...v }))}
+                onSaveOrg={saveOrgProfile}
+                onSaveAnnouncement={saveAnnouncement}
+                onDeleteAnnouncement={removeAnnouncement}
+                onAction={changeAccountAccess}
+                onReviewReport={reviewReport}
+                onDeleteReport={deleteReport}
+                onViewReport={(report) => setModal({ type: "report", report })}
+                onViewAccount={(user) =>
+                    setModal({ type: "account-details", user })
+                }
+                onSendAlert={(user) =>
+                    setModal({ type: "alert-compose", user })
+                }
+                onLogout={() => {
+                    setSession(null);
+                    setPage("Home");
+                }}
+            />
+        );
+    else if (protectedPage && !session)
+        content = (
+            <AuthPage onLogin={login} onRegister={register} onNavigate={go} />
+        );
+    else
+        content = (
+            <HomePage
+                pets={publicPets}
+                orgs={publicOrgs}
+                reports={publicReports}
+                announcements={announcements}
+                favorites={favorites}
+                toggleFavorite={favorite}
+                onAdopt={startAdoptionInquiry}
+                onDetails={(animal) => setModal({ type: "animal", animal })}
+                onMessage={messageOrg}
+                onNavigate={go}
+                onOrg={(o) => {
+                    setDetailOrg(o);
+                    go("Organization detail");
+                }}
+            />
+        );
+    const staff = session?.role === "organization" || session?.role === "admin";
+    return (
+        <>
+            {staff ? null : header}
+            {content}
+            {!staff && page !== "Register" && <Footer onNavigate={go} />}
+            {(session?.role === "user" || session?.role === "organization") &&
+                page !== "Messages" && (
+                    <MessageDock
+                        open={messageDockOpen}
+                        setOpen={setMessageDockOpen}
+                        session={session}
+                        orgs={publicOrgs}
+                        users={users}
+                        messages={messages}
+                        activeOrg={activeMessageOrg}
+                        onSelectOrg={setActiveMessageOrg}
+                        onSend={sendMessage}
+                        onOpenInbox={() => {
+                            setMessageDockOpen(false);
+                            go("Messages");
+                        }}
+                    />
+                )}
+            {toast && <div className="toast">{toast}</div>}
+            {(modal || page === "Log in") && (
+                <Modal
+                    onClose={() => {
+                        if (page === "Log in") setPage("Home");
+                        setModal(null);
+                    }}
+                    wide={
+                        modal?.type === "animal" ||
+                        modal?.type === "listing" ||
+                        modal?.type === "report-form" ||
+                        modal?.type === "report" ||
+                        modal?.type === "inquiry-details"
+                    }
+                    className={
+                        modal?.type === "inquiry"
+                            ? "inquiry-modal"
+                            : !modal && page === "Log in"
+                              ? "auth-modal"
+                              : ""
+                    }
+                >
+                    {!modal && page === "Log in" ? (
+                        <AuthPage
+                            key="login-modal"
+                            initialMode="login"
+                            onLogin={login}
+                            onRegister={register}
+                            onNavigate={go}
+                        />
+                    ) : modal?.type === "animal" ? (
+                        <AnimalDetails
+                            animal={modal.animal}
+                            orgs={orgs}
+                            isFavorite={favorites.includes(modal.animal.id)}
+                            onFavorite={() => favorite(modal.animal.id)}
+                            onMessage={() =>
+                                messageOrg(
+                                    orgs.find(
+                                        (o) => o.id === modal.animal.orgId,
+                                    ),
+                                )
+                            }
+                            onInquiry={startAdoptionInquiry}
+                        />
+                    ) : modal?.type === "inquiry" ? (
+                        <InquiryForm
+                            pet={modal.pet}
+                            orgs={orgs}
+                            onSubmit={submitInquiry}
+                            onClose={() => setModal(null)}
+                        />
+                    ) : modal?.type === "report" ? (
+                        <ReportDetail
+                            report={modal.report}
+                            submitter={users.find(
+                                (u) => u.id === modal.report.userId,
+                            )}
+                            assignedOrganization={
+                                orgs.find((o) => o.id === modal.report.orgId)
+                                    ?.name
+                            }
+                        />
+                    ) : modal?.type === "inquiry-details" ? (
+                        <InquiryDetail inquiry={modal.inquiry} />
+                    ) : modal?.type === "account-details" ? (
+                        <AccountDetails user={modal.user} />
+                    ) : modal?.type === "alert-compose" ? (
+                        <AlertComposer
+                            account={modal.user}
+                            onSubmit={(message) => {
+                                sendAlert(modal.user, message);
+                                setModal(null);
+                            }}
+                        />
+                    ) : modal?.type === "report-form" ? (
+                        <ReportPage
+                            orgs={publicOrgs}
+                            onSubmit={submitReport}
+                            inModal
+                        />
+                    ) : modal?.type === "listing" ? (
+                        <ListingEditor
+                            listing={modal.listing}
+                            onSave={saveListing}
+                            onClose={() => setModal(null)}
+                        />
+                    ) : (
+                        <div className="modal-copy">
+                            <h2>Done</h2>
+                            <p>{modal?.text}</p>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => setModal(null)}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    )}
+                </Modal>
+            )}
+        </>
+    );
 }
 
-function MessageDock({session,orgs,users,messages,activeOrg,onSelectOrg,onSend,onOpenInbox}){
- const [open,setOpen]=useState(false),[draft,setDraft]=useState(''),[activeParticipant,setActiveParticipant]=useState('')
- const availableOrgs=session.role==='organization'?orgs.filter(o=>o.id===session.orgId):orgs
- const selectedOrg=availableOrgs.find(o=>o.id===activeOrg)||availableOrgs[0]
- const participants=session.role==='organization'?[...new Set(messages.filter(m=>m.orgId===selectedOrg?.id&&m.participantId&&m.participantId!==session.id).map(m=>m.participantId))]:[]
- const participantId=activeParticipant||participants[0]||'',participant=users.find(user=>user.id===participantId)
- const thread=messages.filter(m=>m.orgId===selectedOrg?.id&&(session.role==='organization'?Boolean(participantId)&&m.participantId===participantId:(m.participantId===session.id||m.senderId===session.id)))
- const submit=e=>{e.preventDefault();if(!draft.trim()||!selectedOrg||(session.role==='organization'&&!participantId))return;onSend({orgId:selectedOrg.id,text:draft.trim(),senderId:session.id,participantId:session.role==='organization'?participantId:session.id});setDraft('')}
- return <div className="message-dock">
-  {open&&<section className="message-popover" aria-label="Messages">
-   <header className="message-popover-head"><div><b>{session.role==='organization'?participant?.name||'Organization inbox':'Messages'}</b><small>{session.role==='organization'?'Private adopter conversation':`Chat with ${selectedOrg?.name||'an organization'}`}</small></div><button className="icon-button" onClick={()=>setOpen(false)} aria-label="Close messages"><X size={17}/></button></header>
-   {session.role==='organization'?<label className="message-org-select"><span>Conversation</span><select value={participantId} onChange={e=>setActiveParticipant(e.target.value)}><option value="">Select an adopter</option>{participants.map(id=><option key={id} value={id}>{users.find(user=>user.id===id)?.name||id}</option>)}</select></label>:<label className="message-org-select"><span>To</span><select value={selectedOrg?.id||''} onChange={e=>onSelectOrg(e.target.value)}>{availableOrgs.map(org=><option key={org.id} value={org.id}>{org.name}</option>)}</select></label>}
-   <div className="message-popover-thread">{thread.length?thread.slice(-20).map((m,i)=><div className={`message-popover-row ${m.senderId===session.id?'mine':''}`} key={m.id||i}><span>{m.text}</span><small>{m.time||'Recently'}</small></div>):<p className="message-popover-empty">{session.role==='organization'?'Adopter conversations will appear here.':`Start a conversation with ${selectedOrg?.name||'an organization'}.`}</p>}</div>
-   <form className="message-popover-compose" onSubmit={submit}><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Aa" aria-label="Write a message" disabled={session.role==='organization'&&!participantId}/><button className="message-send" disabled={!draft.trim()||(session.role==='organization'&&!participantId)} aria-label="Send message"><ArrowRight size={17}/></button></form>
-   <button className="message-inbox-link" onClick={onOpenInbox}>Open full inbox</button>
-  </section>}
-  <button className={`message-launcher ${open?'is-open':''}`} onClick={()=>setOpen(v=>!v)} aria-label={open?'Close messages':'Open messages'}>{open?<X size={20}/>:<MessageCircle size={21}/>}</button>
- </div>
+function MessageDock({
+    open,
+    setOpen,
+    session,
+    orgs,
+    users,
+    messages,
+    activeOrg,
+    onSelectOrg,
+    onSend,
+    onOpenInbox,
+}) {
+    const [draft, setDraft] = useState(""),
+        [activeParticipant, setActiveParticipant] = useState("");
+    const availableOrgs =
+        session.role === "organization"
+            ? orgs.filter((o) => o.id === session.orgId)
+            : orgs;
+    const selectedOrg =
+        availableOrgs.find((o) => o.id === activeOrg) || availableOrgs[0];
+    const participants =
+        session.role === "organization"
+            ? [
+                  ...new Set(
+                      messages
+                          .filter(
+                              (m) =>
+                                  m.orgId === selectedOrg?.id &&
+                                  m.participantId &&
+                                  m.participantId !== session.id,
+                          )
+                          .map((m) => m.participantId),
+                  ),
+              ]
+            : [];
+    const participantId = activeParticipant || participants[0] || "",
+        participant = users.find((user) => user.id === participantId);
+    const thread = messages.filter(
+        (m) =>
+            m.orgId === selectedOrg?.id &&
+            (session.role === "organization"
+                ? Boolean(participantId) && m.participantId === participantId
+                : m.participantId === session.id || m.senderId === session.id),
+    );
+    const submit = (e) => {
+        e.preventDefault();
+        if (
+            !draft.trim() ||
+            !selectedOrg ||
+            (session.role === "organization" && !participantId)
+        )
+            return;
+        onSend({
+            orgId: selectedOrg.id,
+            text: draft.trim(),
+            senderId: session.id,
+            participantId:
+                session.role === "organization" ? participantId : session.id,
+        });
+        setDraft("");
+    };
+    return (
+        <div className="message-dock">
+            {open && (
+                <section className="message-popover" aria-label="Messages">
+                    <header className="message-popover-head">
+                        <div>
+                            <b>
+                                {session.role === "organization"
+                                    ? participant?.name || "Organization inbox"
+                                    : "Messages"}
+                            </b>
+                            <small>
+                                {session.role === "organization"
+                                    ? "Private adopter conversation"
+                                    : `Chat with ${selectedOrg?.name || "an organization"}`}
+                            </small>
+                        </div>
+                        <button
+                            className="icon-button"
+                            onClick={() => setOpen(false)}
+                            aria-label="Close messages"
+                        >
+                            <X size={17} />
+                        </button>
+                    </header>
+                    {session.role === "organization" ? (
+                        <label className="message-org-select">
+                            <span>Conversation</span>
+                            <select
+                                value={participantId}
+                                onChange={(e) =>
+                                    setActiveParticipant(e.target.value)
+                                }
+                            >
+                                <option value="">Select an adopter</option>
+                                {participants.map((id) => (
+                                    <option key={id} value={id}>
+                                        {users.find((user) => user.id === id)
+                                            ?.name || id}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    ) : (
+                        <label className="message-org-select">
+                            <span>To</span>
+                            <select
+                                value={selectedOrg?.id || ""}
+                                onChange={(e) => onSelectOrg(e.target.value)}
+                            >
+                                {availableOrgs.map((org) => (
+                                    <option key={org.id} value={org.id}>
+                                        {org.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    )}
+                    <div className="message-popover-thread">
+                        {thread.length ? (
+                            thread.slice(-20).map((m, i) => (
+                                <div
+                                    className={`message-popover-row ${m.senderId === session.id ? "mine" : ""}`}
+                                    key={m.id || i}
+                                >
+                                    <span>{m.text}</span>
+                                    <small>{m.time || "Recently"}</small>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="message-popover-empty">
+                                {session.role === "organization"
+                                    ? "Adopter conversations will appear here."
+                                    : `Start a conversation with ${selectedOrg?.name || "an organization"}.`}
+                            </p>
+                        )}
+                    </div>
+                    <form className="message-popover-compose" onSubmit={submit}>
+                        <input
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            placeholder="Aa"
+                            aria-label="Write a message"
+                            disabled={
+                                session.role === "organization" &&
+                                !participantId
+                            }
+                        />
+                        <button
+                            className="message-send"
+                            disabled={
+                                !draft.trim() ||
+                                (session.role === "organization" &&
+                                    !participantId)
+                            }
+                            aria-label="Send message"
+                        >
+                            <ArrowRight size={17} />
+                        </button>
+                    </form>
+                    <button
+                        className="message-inbox-link"
+                        onClick={onOpenInbox}
+                    >
+                        Open full inbox
+                    </button>
+                </section>
+            )}
+            <button
+                className={`message-launcher ${open ? "is-open" : ""}`}
+                onClick={() => setOpen((v) => !v)}
+                aria-label={open ? "Close messages" : "Open messages"}
+            >
+                {open ? <X size={20} /> : <MessageCircle size={21} />}
+            </button>
+        </div>
+    );
 }
 
-function AccountDetails({user}){return <div className="modal-copy"><div className="kicker">Account details</div><h2>{user.name}</h2><dl className="detail-list"><dt>Account type</dt><dd>{user.role}</dd><dt>Email</dt><dd>{user.email}</dd><dt>Phone</dt><dd>{user.phone||'Not provided'}</dd><dt>Address</dt><dd>{user.address||'Not provided'}</dd><dt>Status</dt><dd>{user.status||'Active'}</dd><dt>Organization</dt><dd>{user.orgId||'Resident account'}</dd></dl></div>}
-function InquiryDetail({inquiry}){return <div className="modal-copy"><div className="kicker">Adoption inquiry</div><h2>{inquiry.name}</h2><dl className="detail-list"><dt>Animal</dt><dd>{inquiry.petName}</dd><dt>Email</dt><dd>{inquiry.email}</dd><dt>Phone</dt><dd>{inquiry.phone}</dd><dt>Age</dt><dd>{inquiry.age}</dd><dt>Address</dt><dd>{inquiry.address}</dd><dt>Living arrangements</dt><dd>{inquiry.living}</dd><dt>Experience</dt><dd>{inquiry.experience}</dd><dt>Reason</dt><dd>{inquiry.reason}</dd><dt>Submitted</dt><dd>{inquiry.date}</dd><dt>Status</dt><dd>{inquiry.status}</dd></dl></div>}
-function AlertComposer({account,onSubmit}){const [message,setMessage]=useState('');return <form className="modal-copy" onSubmit={e=>{e.preventDefault();onSubmit(message)}}><div className="kicker">Account notice</div><h2>Send a notice to {account.name}</h2><p>The notice will appear in this account’s PawRescue notifications.</p><Field label="Message"><textarea required rows="5" value={message} onChange={e=>setMessage(e.target.value)} placeholder="Write a reminder, warning, or service alert…"/></Field><button className="btn btn-primary">Send notice</button></form>}
+function AccountDetails({ user }) {
+    return (
+        <div className="modal-copy">
+            <div className="kicker">Account details</div>
+            <h2>{user.name}</h2>
+            <dl className="detail-list">
+                <dt>Account type</dt>
+                <dd>{user.role}</dd>
+                <dt>Email</dt>
+                <dd>{user.email}</dd>
+                <dt>Phone</dt>
+                <dd>{user.phone || "Not provided"}</dd>
+                <dt>Address</dt>
+                <dd>{user.address || "Not provided"}</dd>
+                <dt>Status</dt>
+                <dd>{user.status || "Active"}</dd>
+                <dt>Organization</dt>
+                <dd>{user.orgId || "Resident account"}</dd>
+            </dl>
+        </div>
+    );
+}
+function InquiryDetail({ inquiry }) {
+    return (
+        <div className="modal-copy">
+            <div className="kicker">Adoption inquiry</div>
+            <h2>{inquiry.name}</h2>
+            <dl className="detail-list">
+                <dt>Animal</dt>
+                <dd>{inquiry.petName}</dd>
+                <dt>Email</dt>
+                <dd>{inquiry.email}</dd>
+                <dt>Phone</dt>
+                <dd>{inquiry.phone}</dd>
+                <dt>Age</dt>
+                <dd>{inquiry.age}</dd>
+                <dt>Address</dt>
+                <dd>{inquiry.address}</dd>
+                <dt>Living arrangements</dt>
+                <dd>{inquiry.living}</dd>
+                <dt>Experience</dt>
+                <dd>{inquiry.experience}</dd>
+                <dt>Reason</dt>
+                <dd>{inquiry.reason}</dd>
+                <dt>Submitted</dt>
+                <dd>{inquiry.date}</dd>
+                <dt>Status</dt>
+                <dd>{inquiry.status}</dd>
+            </dl>
+        </div>
+    );
+}
+function AlertComposer({ account, onSubmit }) {
+    const [message, setMessage] = useState("");
+    return (
+        <form
+            className="modal-copy"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit(message);
+            }}
+        >
+            <div className="kicker">Account notice</div>
+            <h2>Send a notice to {account.name}</h2>
+            <p>
+                The notice will appear in this account’s PawRescue
+                notifications.
+            </p>
+            <Field label="Message">
+                <textarea
+                    required
+                    rows="5"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Write a reminder, warning, or service alert…"
+                />
+            </Field>
+            <button className="btn btn-primary">Send notice</button>
+        </form>
+    );
+}
 
-function OrganizationDetail({org,pets,favorites,onFavorite,onDetails,onMessage,onAdopt,onAnimals,onBack}){const list=pets.filter(p=>p.orgId===org.id&&p.status==='Available');return <main className="page-shell"><button className="btn btn-ghost" onClick={onBack}>← Back to Shelter Directory</button><PageIntro eyebrow={org.category} title={org.name} text={org.description} action={<button className="btn btn-soft" onClick={onAnimals}>Available animals <ArrowRight size={14}/></button>}/><div className="org-profile-layout"><section className="content-panel"><div className="org-profile-cover" style={{backgroundImage:`linear-gradient(90deg,#21182f88,#39294a22),url(${org.cover||'https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=1500&q=80'})`}}/><div className="org-profile-head"><div className="org-logo large">{org.photo?<img src={org.photo} alt=""/>:(org.icon||'🐾')}</div><div className="org-profile-summary"><h2>{org.name}</h2><p>{org.category}</p></div><div className="org-contact-grid"><div><small>Contact person</small><b>{org.representative||'Organization team'}</b></div><div><small>Phone number</small><b>{org.phone||'Not provided'}</b></div><div><small>Email</small><b>{org.email||'Not provided'}</b></div><div><small>Location</small><b>{[org.address||org.place,org.city,org.region].filter(Boolean).join(', ')}</b></div></div><button className="btn btn-primary" onClick={()=>onMessage(org)}>Message organization</button></div><h3>About and services</h3><p className="org-detail-description">{org.description||'This organization supports animals in the local community.'}</p><div className="tags">{(org.services||[]).map(s=><span className="tag" key={s}>{s}</span>)}</div><h3 className="org-listings-title">Available animals</h3>{list.length?<div className="pets-grid">{list.map(p=><AnimalCard key={p.id} animal={p} favorite={favorites.includes(p.id)} onFavorite={onFavorite} onDetails={onDetails} onMessage={onMessage} onAdopt={onAdopt} orgs={[org]}/>)}</div>:<EmptyState title="No available adoption listings" text="This organization has no animals currently listed for adoption."/>}</section></div></main>}
-function AnimalDetails({animal,orgs,isFavorite,onFavorite,onMessage,onInquiry}){const org=orgs.find(o=>o.id===animal.orgId);return <div className="animal-details"><img src={animal.image?.startsWith('data:')?animal.image:`https://images.unsplash.com/${animal.image}?auto=format&fit=crop&w=1000&q=85`} alt={animal.name}/><div className="modal-copy"><span className="badge inline-badge">{animal.status}</span><h2>{animal.name}</h2><p className="pet-meta">{animal.kind} · {animal.breed} · {animal.age} · {animal.gender}</p><dl className="detail-list"><dt>Condition</dt><dd>{animal.condition}</dd><dt>Location</dt><dd>{animal.place}</dd><dt>Organization</dt><dd>{org?.name}</dd><dt>About</dt><dd>{animal.description}</dd></dl><div className="pet-actions"><button className="btn btn-soft" onClick={onFavorite}><Heart size={15} fill={isFavorite?'currentColor':'none'}/>{isFavorite?'Favorited':'Favorite'}</button><button className="btn btn-ghost" onClick={onMessage}>Message organization</button><button className="btn btn-primary" onClick={()=>onInquiry(animal)}>Adoption inquiry</button></div></div></div>}
-function InquiryForm({pet,orgs,onSubmit,onClose}){const [form,setForm]=useState({name:'',age:'',address:'',email:'',phone:'',living:'',experience:'',reason:'',additional:''});const org=orgs.find(o=>o.id===pet.orgId);return <form className="modal-copy inquiry-copy" onSubmit={e=>{e.preventDefault();onSubmit({...form,pet,orgId:org.id,orgName:org.name});}}><div className="kicker">Adoption inquiry</div><h2>Ask about {pet.name}</h2><p>Your inquiry will be associated with {pet.name} and sent to {org.name}. The organization reviews each application; submitting this form does not guarantee approval or establish legal ownership.</p><div className="form-grid"><Field label="Your name *"><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></Field><Field label="Email *"><input required type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></Field><Field label="Age *"><input required type="number" min="1" value={form.age} onChange={e=>setForm({...form,age:e.target.value})}/></Field><Field label="Contact number *"><input required value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></Field><Field label="Address *" wide><input required value={form.address} onChange={e=>setForm({...form,address:e.target.value})}/></Field><Field label="Preferred animal"><input value={`${pet.name} · ${pet.kind}`} readOnly/></Field><Field label="Living arrangements *" wide><select required value={form.living} onChange={e=>setForm({...form,living:e.target.value})}><option value="">Select one</option><option>House with a yard</option><option>House without a yard</option><option>Apartment or condominium</option><option>Other</option></select></Field><Field label="Experience with pets *" wide><textarea required rows="3" value={form.experience} onChange={e=>setForm({...form,experience:e.target.value})}/></Field><Field label="Why would you like to adopt? *" wide><textarea required rows="3" value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})}/></Field><Field label="Additional information" wide><textarea rows="2" value={form.additional} onChange={e=>setForm({...form,additional:e.target.value})}/></Field><button className="btn btn-primary span2">Send inquiry <ArrowRight size={15}/></button></div></form>}
-function Footer({onNavigate}){return <footer className="footer"><div><button className="brand footer-brand" onClick={()=>onNavigate('Home')}><span className="brandmark"><PawPrint size={20}/></span><span>Paw<em>Rescue</em></span></button><p>A community platform for animal reports, shelter information, and adoption connections.</p></div><div><h4>Explore</h4><button onClick={()=>onNavigate('Adopt')}>Adoption listings</button><button onClick={()=>onNavigate('Shelter Directory')}>Shelter Directory</button><button onClick={()=>onNavigate('Report an animal')}>Submit a report</button></div><div><h4>Your account</h4><button onClick={()=>onNavigate('Dashboard')}>Dashboard</button><button onClick={()=>onNavigate('Messages')}>Messages</button><button onClick={()=>onNavigate('Favorites')}>Favorites</button></div><div><h4>Our promise</h4><p>Reports and listing details are shared by users and participating organizations. Status updates reflect recorded information.</p></div><div className="copyright">© 2026 PawRescue · Community animal support</div></footer>}
+function OrganizationDetail({
+    org,
+    pets,
+    favorites,
+    onFavorite,
+    onDetails,
+    onMessage,
+    onAdopt,
+    onAnimals,
+    onBack,
+}) {
+    const list = pets.filter(
+        (p) => p.orgId === org.id && p.status === "Available",
+    );
+    return (
+        <main className="page-shell">
+            <button className="btn btn-ghost" onClick={onBack}>
+                ← Back to Shelter Directory
+            </button>
+            <PageIntro
+                eyebrow={org.category}
+                title={org.name}
+                text={org.description}
+                action={
+                    <button className="btn btn-soft" onClick={onAnimals}>
+                        Available animals <ArrowRight size={14} />
+                    </button>
+                }
+            />
+            <div className="org-profile-layout">
+                <section className="content-panel">
+                    <div
+                        className="org-profile-cover"
+                        style={{
+                            backgroundImage: `linear-gradient(90deg,#21182f88,#39294a22),url(${org.cover || "https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=1500&q=80"})`,
+                        }}
+                    />
+                    <div className="org-profile-head">
+                        <div className="org-logo large">
+                            {org.photo ? (
+                                <img src={org.photo} alt="" />
+                            ) : (
+                                org.icon || "🐾"
+                            )}
+                        </div>
+                        <div className="org-profile-summary">
+                            <h2>{org.name}</h2>
+                            <p>{org.category}</p>
+                        </div>
+                        <div className="org-contact-grid">
+                            <div>
+                                <small>Contact person</small>
+                                <b>
+                                    {org.representative || "Organization team"}
+                                </b>
+                            </div>
+                            <div>
+                                <small>Phone number</small>
+                                <b>{org.phone || "Not provided"}</b>
+                            </div>
+                            <div>
+                                <small>Email</small>
+                                <b>{org.email || "Not provided"}</b>
+                            </div>
+                            <div>
+                                <small>Location</small>
+                                <b>
+                                    {[
+                                        org.address || org.place,
+                                        org.city,
+                                        org.region,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                </b>
+                            </div>
+                        </div>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => onMessage(org)}
+                        >
+                            Message organization
+                        </button>
+                    </div>
+                    <h3>About and services</h3>
+                    <p className="org-detail-description">
+                        {org.description ||
+                            "This organization supports animals in the local community."}
+                    </p>
+                    <div className="tags">
+                        {(org.services || []).map((s) => (
+                            <span className="tag" key={s}>
+                                {s}
+                            </span>
+                        ))}
+                    </div>
+                    <h3 className="org-listings-title">Available animals</h3>
+                    {list.length ? (
+                        <div className="pets-grid">
+                            {list.map((p) => (
+                                <AnimalCard
+                                    key={p.id}
+                                    animal={p}
+                                    favorite={favorites.includes(p.id)}
+                                    onFavorite={onFavorite}
+                                    onDetails={onDetails}
+                                    onMessage={onMessage}
+                                    onAdopt={onAdopt}
+                                    orgs={[org]}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            title="No available adoption listings"
+                            text="This organization has no animals currently listed for adoption."
+                        />
+                    )}
+                </section>
+            </div>
+        </main>
+    );
+}
+function AnimalDetails({
+    animal,
+    orgs,
+    isFavorite,
+    onFavorite,
+    onMessage,
+    onInquiry,
+}) {
+    const org = orgs.find((o) => o.id === animal.orgId);
+    return (
+        <div className="animal-details">
+            <img
+                src={
+                    animal.image?.startsWith("data:")
+                        ? animal.image
+                        : `https://images.unsplash.com/${animal.image}?auto=format&fit=crop&w=1000&q=85`
+                }
+                alt={animal.name}
+            />
+            <div className="modal-copy">
+                <span className="badge inline-badge">{animal.status}</span>
+                <h2>{animal.name}</h2>
+                <p className="pet-meta">
+                    {animal.kind} · {animal.breed} · {animal.age} ·{" "}
+                    {animal.gender}
+                </p>
+                <dl className="detail-list">
+                    <dt>Condition</dt>
+                    <dd>{animal.condition}</dd>
+                    <dt>Location</dt>
+                    <dd>{animal.place}</dd>
+                    <dt>Organization</dt>
+                    <dd>{org?.name}</dd>
+                    <dt>About</dt>
+                    <dd>{animal.description}</dd>
+                </dl>
+                <div className="pet-actions">
+                    <button className="btn btn-soft" onClick={onFavorite}>
+                        <Heart
+                            size={15}
+                            fill={isFavorite ? "currentColor" : "none"}
+                        />
+                        {isFavorite ? "Favorited" : "Favorite"}
+                    </button>
+                    <button className="btn btn-ghost" onClick={onMessage}>
+                        Message organization
+                    </button>
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => onInquiry(animal)}
+                    >
+                        Adoption inquiry
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+function InquiryForm({ pet, orgs, onSubmit, onClose }) {
+    const [form, setForm] = useState({
+        name: "",
+        age: "",
+        address: "",
+        email: "",
+        phone: "",
+        living: "",
+        experience: "",
+        reason: "",
+        additional: "",
+    });
+    const org = orgs.find((o) => o.id === pet.orgId);
+    return (
+        <form
+            className="modal-copy inquiry-copy"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit({ ...form, pet, orgId: org.id, orgName: org.name });
+            }}
+        >
+            <div className="kicker">Adoption inquiry</div>
+            <h2>Ask about {pet.name}</h2>
+            <p>
+                Your inquiry will be associated with {pet.name} and sent to{" "}
+                {org.name}. The organization reviews each application;
+                submitting this form does not guarantee approval or establish
+                legal ownership.
+            </p>
+            <div className="form-grid">
+                <Field label="Your name *">
+                    <input
+                        required
+                        value={form.name}
+                        onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Email *">
+                    <input
+                        required
+                        type="email"
+                        value={form.email}
+                        onChange={(e) =>
+                            setForm({ ...form, email: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Age *">
+                    <input
+                        required
+                        type="number"
+                        min="1"
+                        value={form.age}
+                        onChange={(e) =>
+                            setForm({ ...form, age: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Contact number *">
+                    <input
+                        required
+                        value={form.phone}
+                        onChange={(e) =>
+                            setForm({ ...form, phone: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Address *" wide>
+                    <input
+                        required
+                        value={form.address}
+                        onChange={(e) =>
+                            setForm({ ...form, address: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Preferred animal">
+                    <input value={`${pet.name} · ${pet.kind}`} readOnly />
+                </Field>
+                <Field label="Living arrangements *" wide>
+                    <select
+                        required
+                        value={form.living}
+                        onChange={(e) =>
+                            setForm({ ...form, living: e.target.value })
+                        }
+                    >
+                        <option value="">Select one</option>
+                        <option>House with a yard</option>
+                        <option>House without a yard</option>
+                        <option>Apartment or condominium</option>
+                        <option>Other</option>
+                    </select>
+                </Field>
+                <Field label="Experience with pets *" wide>
+                    <textarea
+                        required
+                        rows="3"
+                        value={form.experience}
+                        onChange={(e) =>
+                            setForm({ ...form, experience: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Why would you like to adopt? *" wide>
+                    <textarea
+                        required
+                        rows="3"
+                        value={form.reason}
+                        onChange={(e) =>
+                            setForm({ ...form, reason: e.target.value })
+                        }
+                    />
+                </Field>
+                <Field label="Additional information" wide>
+                    <textarea
+                        rows="2"
+                        value={form.additional}
+                        onChange={(e) =>
+                            setForm({ ...form, additional: e.target.value })
+                        }
+                    />
+                </Field>
+                <button className="btn btn-primary span2">
+                    Send inquiry <ArrowRight size={15} />
+                </button>
+            </div>
+        </form>
+    );
+}
+function Footer({ onNavigate }) {
+    return (
+        <footer className="footer">
+            <div>
+                <button
+                    className="brand footer-brand"
+                    onClick={() => onNavigate("Home")}
+                >
+                    <span className="brandmark">
+                        <PawPrint size={20} />
+                    </span>
+                    <span>
+                        Paw<em>Rescue</em>
+                    </span>
+                </button>
+                <p>
+                    A community platform for animal reports, shelter
+                    information, and adoption connections.
+                </p>
+            </div>
+            <div>
+                <h4>Explore</h4>
+                <button onClick={() => onNavigate("Adopt")}>
+                    Adoption listings
+                </button>
+                <button onClick={() => onNavigate("Shelter Directory")}>
+                    Shelter Directory
+                </button>
+                <button onClick={() => onNavigate("Report an animal")}>
+                    Submit a report
+                </button>
+            </div>
+            <div>
+                <h4>Your account</h4>
+                <button onClick={() => onNavigate("Dashboard")}>
+                    Dashboard
+                </button>
+                <button onClick={() => onNavigate("Messages")}>Messages</button>
+                <button onClick={() => onNavigate("Favorites")}>
+                    Favorites
+                </button>
+            </div>
+            <div>
+                <h4>Our promise</h4>
+                <p>
+                    Reports and listing details are shared by users and
+                    participating organizations. Status updates reflect recorded
+                    information.
+                </p>
+            </div>
+            <div className="copyright">
+                © 2026 PawRescue · Community animal support
+            </div>
+        </footer>
+    );
+}
