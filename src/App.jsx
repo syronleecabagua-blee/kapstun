@@ -596,6 +596,12 @@ export default function App() {
                                       : status === "Cancelled"
                                         ? "red"
                                         : "green",
+                          rescuedAt:
+                              status === "Rescued"
+                                  ? r.status === "Rescued"
+                                      ? r.rescuedAt || new Date().toISOString()
+                                      : new Date().toISOString()
+                                  : r.rescuedAt,
                       }
                     : r,
             ),
@@ -991,6 +997,7 @@ export default function App() {
         content = (
             <PublicReportsPage
                 reports={publicReports}
+                orgs={publicOrgs}
                 onReport={() => go("Report an animal")}
                 onView={(report) => setModal({ type: "report", report })}
             />
@@ -1114,6 +1121,7 @@ export default function App() {
         content = (
             <MyReportsPage
                 reports={reportsOwned}
+                orgs={orgs}
                 onReport={(report) => setModal({ type: "report", report })}
                 onNavigate={go}
             />

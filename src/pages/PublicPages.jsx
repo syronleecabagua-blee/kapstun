@@ -8,7 +8,7 @@ import {
     SearchBox,
     StatusBadge,
 } from "../components/Controls";
-import { initialPets, organizations } from "../data";
+import { initialPets, organizations, photoUrl } from "../data";
 
 export function HomePage({
     pets,
@@ -504,7 +504,12 @@ export function DirectoryPage({
         </main>
     );
 }
-export function PublicReportsPage({ reports = [], onReport, onView }) {
+export function PublicReportsPage({
+    reports = [],
+    orgs = organizations,
+    onReport,
+    onView,
+}) {
     const [query, setQuery] = useState("");
     const approved = reports.filter(
             (r) => r.approvalStatus === "Approved" && r.publicDisplay,
@@ -521,63 +526,108 @@ export function PublicReportsPage({ reports = [], onReport, onView }) {
                 title="Public Animal Reports"
                 text="View animal-related cases approved for public display by PawRescue administrators."
                 action={
-                    <button className="btn btn-primary" onClick={onReport}>
-                        ＋ Report an animal
-                    </button>
+                    <div className="public-report-actions">
+                        <SearchBox
+                            value={query}
+                            onChange={setQuery}
+                            placeholder="Search report type, animal, or location…"
+                        />
+                        <button className="btn btn-primary" onClick={onReport}>
+                            ＋ Report an animal
+                        </button>
+                    </div>
                 }
             />
-            <div className="public-reports-search">
-                <SearchBox
-                    value={query}
-                    onChange={setQuery}
-                    placeholder="Search report type, animal, or location…"
-                />
-            </div>
             {filtered.length ? (
                 <div className="public-cases">
-                    {filtered.map((report) => (
-                        <article
-                            className="content-panel public-case"
-                            key={report.id}
-                        >
-                            <div className="public-case-head">
-                                <div>
-                                    <span className="kicker">
-                                        {report.id} · {report.kind}
-                                    </span>
-                                    <h2>
-                                        {report.animalType}
-                                        {report.breed
-                                            ? ` · ${report.breed}`
-                                            : ""}
-                                    </h2>
-                                </div>
-                                <StatusBadge status={report.status} />
-                            </div>
-                            <p>{report.description}</p>
-                            {(report.photo || report.image) && (
-                                <img
-                                    className="public-report-photo"
-                                    src={report.photo || report.image}
-                                    alt="Animal in community report"
-                                />
-                            )}
-                            <dl>
-                                <dt>Location</dt>
-                                <dd>{report.place}</dd>
-                                <dt>Condition</dt>
-                                <dd>{report.condition}</dd>
-                                <dt>Reported</dt>
-                                <dd>{report.date}</dd>
-                            </dl>
-                            <button
-                                className="btn btn-ghost"
-                                onClick={() => onView(report)}
+                    {filtered.map((report) => {
+                        const uploadedPhoto = report.photo || report.image;
+                        const fallbackPhoto = photoUrl(
+                            report.animalType?.toLowerCase() === "cat"
+                                ? "photo-1514888286974-6c03e2ca1dba"
+                                : "photo-1543466835-00a7907e9de1",
+                            900,
+                        );
+                        const assignedOrganization = orgs.find(
+                            (organization) => organization.id === report.orgId,
+                        );
+                        const takenByOrganization =
+                            report.assignmentStatus === "Accepted" ||
+                            ["Responding", "Rescued", "Completed"].includes(
+                                report.status,
+                            );
+                        const rescuedDate = report.rescuedAt
+                            ? new Date(report.rescuedAt).toLocaleString()
+                            : "Date not recorded";
+
+                        return (
+                            <article
+                                className="content-panel public-case"
+                                key={report.id}
                             >
-                                View Details
-                            </button>
-                        </article>
-                    ))}
+                                <div className="public-case-head">
+                                    <div>
+                                        <span className="kicker">
+                                            {report.id} · {report.kind}
+                                        </span>
+                                        <h2>
+                                            {report.animalType}
+                                            {report.breed
+                                                ? ` · ${report.breed}`
+                                                : ""}
+                                        </h2>
+                                    </div>
+                                    <StatusBadge status={report.status} />
+                                </div>
+                                <p>{report.description}</p>
+                                <div className="public-report-image-wrap">
+                                    <img
+                                        className="public-report-photo"
+                                        src={uploadedPhoto || fallbackPhoto}
+                                        alt={
+                                            uploadedPhoto
+                                                ? `Animal in ${report.kind.toLowerCase()} report`
+                                                : `Representative ${report.animalType.toLowerCase()} photo; no report photo was submitted`
+                                        }
+                                    />
+                                    {!uploadedPhoto && (
+                                        <span className="public-report-image-note">
+                                            Representative image
+                                        </span>
+                                    )}
+                                </div>
+                                <dl>
+                                    <dt>Location</dt>
+                                    <dd>{report.place}</dd>
+                                    <dt>Condition</dt>
+                                    <dd>{report.condition}</dd>
+                                    <dt>Reported</dt>
+                                    <dd>{report.date}</dd>
+                                    {takenByOrganization && (
+                                        <>
+                                            <dt>Taken by</dt>
+                                            <dd>
+                                                {assignedOrganization?.name ||
+                                                    "Organization not listed"}
+                                            </dd>
+                                        </>
+                                    )}
+                                    {report.status === "Rescued" && (
+                                        <>
+                                            <dt>Rescued update</dt>
+                                            <dd>{rescuedDate}</dd>
+                                        </>
+                                    )}
+                                </dl>
+                                <button
+                                    className="btn btn-ghost"
+                                    onClick={() => onView(report)}
+                                >
+                                    View Details
+                                </button>
+                            </article>
+                        );
+                    })}
                 </div>
             ) : (
                 <EmptyState

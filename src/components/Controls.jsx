@@ -1,5 +1,13 @@
 import { useEffect, useRef } from "react";
-import { ArrowRight, Check, Heart, MapPin, Search, X } from "lucide-react";
+import {
+    ArrowRight,
+    Check,
+    Heart,
+    MapPin,
+    Search,
+    Upload,
+    X,
+} from "lucide-react";
 import { organizations, photoUrl } from "../data";
 
 export function PageIntro({ eyebrow, title, text, action, className = "" }) {
@@ -365,8 +373,12 @@ export function PhotoUpload({ value, onChange, profilePicture = false }) {
         r.readAsDataURL(f);
     };
     return (
-        <div className="photo-upload">
-            {value && (
+        <div
+            className={`photo-upload ${
+                profilePicture ? "profile-picture-upload" : ""
+            }`}
+        >
+            {value && !profilePicture && (
                 <div className="photo-preview">
                     <img src={value} alt="Selected upload preview" />
                     <button type="button" onClick={() => onChange(null)}>
@@ -382,9 +394,10 @@ export function PhotoUpload({ value, onChange, profilePicture = false }) {
             />
             <button
                 type="button"
-                className="photo-upload-pick"
+                className="btn btn-primary photo-upload-pick"
                 onClick={() => inputRef.current?.click()}
             >
+                <Upload size={16} />
                 {profilePicture
                     ? value
                         ? "Change profile picture"

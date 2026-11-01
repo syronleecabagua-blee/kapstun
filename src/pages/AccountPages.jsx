@@ -350,7 +350,12 @@ export function UserDashboard({
     );
 }
 
-export function MyReportsPage({ reports, onReport, onNavigate }) {
+export function MyReportsPage({
+    reports,
+    orgs = organizations,
+    onReport,
+    onNavigate,
+}) {
     return (
         <main className="page-shell">
             <PageIntro
@@ -367,12 +372,12 @@ export function MyReportsPage({ reports, onReport, onNavigate }) {
                 }
             />
             <div className="content-panel">
-                <ReportTable reports={reports} onOpen={onReport} />
+                <ReportTable reports={reports} orgs={orgs} onOpen={onReport} />
             </div>
         </main>
     );
 }
-function ReportTable({ reports, onOpen }) {
+function ReportTable({ reports, orgs = organizations, onOpen }) {
     return reports.length ? (
         <div className="table-wrap">
             <table>
@@ -382,7 +387,9 @@ function ReportTable({ reports, onOpen }) {
                         <th>ANIMAL</th>
                         <th>LOCATION</th>
                         <th>SUBMITTED</th>
+                        <th>TAKEN BY</th>
                         <th>RECORDED STATUS</th>
+                        <th>RESCUED UPDATE</th>
                         <th>REVIEW</th>
                         <th />
                     </tr>
@@ -395,12 +402,46 @@ function ReportTable({ reports, onOpen }) {
                                 <small>{r.kind}</small>
                             </td>
                             <td>
-                                {r.animalType} · {r.breed || "Unknown"}
+                                <div className="my-report-animal">
+                                    <img
+                                        src={
+                                            r.photo ||
+                                            r.image ||
+                                            photoUrl(
+                                                r.animalType?.toLowerCase() ===
+                                                    "cat"
+                                                    ? "photo-1514888286974-6c03e2ca1dba"
+                                                    : "photo-1543466835-00a7907e9de1",
+                                                240,
+                                            )
+                                        }
+                                        alt={`${r.animalType} report`}
+                                    />
+                                    <span>
+                                        {r.animalType} · {r.breed || "Unknown"}
+                                    </span>
+                                </div>
                             </td>
                             <td>{r.place}</td>
                             <td>{r.date}</td>
                             <td>
+                                {r.assignmentStatus === "Accepted" ||
+                                ["Responding", "Rescued", "Completed"].includes(
+                                    r.status,
+                                )
+                                    ? orgs.find((org) => org.id === r.orgId)
+                                          ?.name || "Organization not listed"
+                                    : "Not assigned"}
+                            </td>
+                            <td>
                                 <StatusBadge status={r.status} />
+                            </td>
+                            <td>
+                                {r.status === "Rescued"
+                                    ? r.rescuedAt
+                                        ? new Date(r.rescuedAt).toLocaleString()
+                                        : "Date not recorded"
+                                    : "—"}
                             </td>
                             <td>
                                 <StatusBadge
@@ -503,7 +544,7 @@ export function ProfilePage({ user, onSave }) {
                 }}
             >
                 <div className="profile-photo">
-                    <div>
+                    <div className="profile-photo-avatar">
                         {photo ? (
                             <img src={photo} alt="Profile" />
                         ) : (
