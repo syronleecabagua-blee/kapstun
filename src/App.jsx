@@ -114,9 +114,31 @@ export default function App() {
         [pendingAction, setPendingAction] = useState(null),
         [toast, setToast] = useState("");
     const [pets, setPets] = useState(() => readStore("pets", initialPets)),
-        [reports, setReports] = useState(() =>
-            readStore("reports", initialReports),
-        ),
+        [reports, setReports] = useState(() => {
+            const savedReports = readStore("reports", []);
+            const seededIds = new Set(initialReports.map((report) => report.id));
+            const savedById = new Map(
+                savedReports.map((report) => [report.id, report]),
+            );
+            const seededReports = initialReports.map((sample) => {
+                const saved = savedById.get(sample.id);
+                return saved
+                    ? {
+                          ...sample,
+                          ...saved,
+                          image: saved.photo || sample.image,
+                          approvalStatus:
+                              saved.approvalStatus || sample.approvalStatus,
+                          publicDisplay:
+                              saved.publicDisplay ?? sample.publicDisplay,
+                      }
+                    : sample;
+            });
+            return [
+                ...seededReports,
+                ...savedReports.filter((report) => !seededIds.has(report.id)),
+            ];
+        }),
         [orgs, setOrgs] = useState(() =>
             readStore("organizations", seedOrganizations),
         ),
@@ -519,24 +541,40 @@ export default function App() {
         notify(`Notice sent to ${user.name}.`);
     };
     const submitReport = (record) => {
-        const org = orgs.find((o) => o.id === record.orgId) || orgs[0];
+        const now = new Date();
         const row = {
             ...record,
             id: `PR-${Math.floor(1000 + Math.random() * 8999)}`,
             place: record.address,
-            date: new Date().toLocaleString(),
+            date: now.toLocaleString(),
             status: "Pending",
             tone: "amber",
             userId: session?.id,
-            orgId: org.id,
+            orgId: null,
             approvalStatus: "Pending",
             publicDisplay: false,
             lat: record.location.lat,
             lng: record.location.lng,
         };
         setReports((v) => [row, ...v]);
+        const reportMessage = `${record.animalType || "Animal"} report: ${record.kind} in ${record.address}.`;
+        const organizationAlerts = orgs
+            .filter((org) => org.approved !== false)
+            .map((org, index) => ({
+                id: `report-alert-${row.id}-${org.id || index}`,
+                userId: null,
+                orgId: org.id,
+                role: "organization",
+                title: "New animal report",
+                message: reportMessage,
+                date: now.toLocaleString(),
+                read: false,
+            }));
+        if (organizationAlerts.length) {
+            setAlerts((v) => [...organizationAlerts, ...v]);
+        }
         setModal(null);
-        notify("Report recorded and sent for review.");
+        notify("Report submitted. All active organizations have been notified.");
         go("My Reports");
     };
     const submitInquiry = (data) => {
@@ -985,6 +1023,9 @@ export default function App() {
                 toggleFavorite={favorite}
                 onAdopt={startAdoptionInquiry}
                 onDetails={(animal) => setModal({ type: "animal", animal })}
+                onReportDetails={(report) =>
+                    setModal({ type: "report", report })
+                }
                 onMessage={messageOrg}
                 onNavigate={go}
                 onOrg={(o) => {
@@ -1046,7 +1087,7 @@ export default function App() {
     else if (page === "Report an animal")
         content =
             session?.role === "user" ? (
-                <ReportPage orgs={publicOrgs} onSubmit={submitReport} />
+                <ReportPage onSubmit={submitReport} />
             ) : !session ? (
                 <AuthPage
                     onLogin={login}
@@ -1081,6 +1122,9 @@ export default function App() {
                 toggleFavorite={favorite}
                 onAdopt={startAdoptionInquiry}
                 onDetails={(animal) => setModal({ type: "animal", animal })}
+                onReportDetails={(report) =>
+                    setModal({ type: "report", report })
+                }
                 onMessage={messageOrg}
                 onNavigate={go}
                 onOrg={(o) => {
@@ -1271,6 +1315,9 @@ export default function App() {
                 toggleFavorite={favorite}
                 onAdopt={startAdoptionInquiry}
                 onDetails={(animal) => setModal({ type: "animal", animal })}
+                onReportDetails={(report) =>
+                    setModal({ type: "report", report })
+                }
                 onMessage={messageOrg}
                 onNavigate={go}
                 onOrg={(o) => {
@@ -1380,7 +1427,6 @@ export default function App() {
                         />
                     ) : modal?.type === "report-form" ? (
                         <ReportPage
-                            orgs={publicOrgs}
                             onSubmit={submitReport}
                             inModal
                         />

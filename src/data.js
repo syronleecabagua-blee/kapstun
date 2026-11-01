@@ -171,7 +171,9 @@ export const initialReports = [
         tone: "blue",
         userId: "user-1",
         orgId: "org-1",
-        image: null,
+        image: "photo-1516734212186-a967f81ad0d7",
+        approvalStatus: "Approved",
+        publicDisplay: true,
     },
     {
         id: "PR-1018",
@@ -188,7 +190,9 @@ export const initialReports = [
         tone: "amber",
         userId: "user-1",
         orgId: "org-2",
-        image: null,
+        image: "photo-1495360010541-f48722b34f7d",
+        approvalStatus: "Approved",
+        publicDisplay: true,
     },
     {
         id: "PR-0981",
@@ -205,7 +209,9 @@ export const initialReports = [
         tone: "green",
         userId: "user-1",
         orgId: "org-1",
-        image: null,
+        image: "photo-1589941013453-ec89f33b5e95",
+        approvalStatus: "Approved",
+        publicDisplay: true,
     },
 ];
 export const readStore = (key, fallback) => {

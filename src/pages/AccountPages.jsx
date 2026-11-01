@@ -24,7 +24,6 @@ import { organizations, photoUrl } from "../data";
 
 export function ReportPage({
     onSubmit,
-    orgs = organizations,
     inModal = false,
 }) {
     const [address, setAddress] = useState(""),
@@ -80,15 +79,6 @@ export function ReportPage({
                                 <option>Injured animal</option>
                                 <option>Abandoned animal</option>
                                 <option>Other concern</option>
-                            </select>
-                        </Field>
-                        <Field label="Organization to notify *">
-                            <select name="orgId" required>
-                                {orgs.map((o) => (
-                                    <option key={o.id} value={o.id}>
-                                        {o.name}
-                                    </option>
-                                ))}
                             </select>
                         </Field>
                         <Field label="Animal type *">
@@ -1297,24 +1287,39 @@ function PartnerRegistration({
 }
 
 export function ReportDetail({ report, submitter, assignedOrganization }) {
+    const reportPhoto = report.photo || report.image;
+    const reportPhotoSrc = reportPhoto
+        ? reportPhoto.startsWith("data:") ||
+          reportPhoto.startsWith("http://") ||
+          reportPhoto.startsWith("https://")
+            ? reportPhoto
+            : photoUrl(reportPhoto, 1000)
+        : photoUrl(
+              report.animalType?.toLowerCase() === "cat"
+                  ? "photo-1495360010541-f48722b34f7d"
+                  : "photo-1516734212186-a967f81ad0d7",
+              1000,
+          );
     return (
-        <div className="modal-copy report-detail-modal">
-            <div className="kicker">Community report · {report.id}</div>
-            <h2>
-                {report.kind}: {report.animalType}
-                {report.breed ? ` · ${report.breed}` : ""}
-            </h2>
-            <p>
-                Submitted by {submitter?.name || "Resident"} · {report.date}
-            </p>
-            {(report.image || report.photo) && (
-                <img
-                    className="report-photo"
-                    src={report.image || report.photo}
-                    alt="Animal included in the report"
-                />
-            )}
-            <dl className="detail-list">
+        <div className="animal-details report-details">
+            <img
+                src={reportPhotoSrc}
+                alt={
+                    reportPhoto
+                        ? "Animal included in the report"
+                        : `Representative ${report.animalType?.toLowerCase() || "animal"} photo`
+                }
+            />
+            <div className="modal-copy report-detail-modal">
+                <div className="kicker">Community report · {report.id}</div>
+                <h2>
+                    {report.kind}: {report.animalType}
+                    {report.breed ? ` · ${report.breed}` : ""}
+                </h2>
+                <p>
+                    Submitted by {submitter?.name || "Resident"} · {report.date}
+                </p>
+                <dl className="detail-list">
                 <dt>Animal</dt>
                 <dd>
                     {report.animalType} · {report.breed || "Unknown breed"}
@@ -1348,11 +1353,12 @@ export function ReportDetail({ report, submitter, assignedOrganization }) {
                     {submitter?.email || "Not provided"}
                     {submitter?.phone ? ` · ${submitter.phone}` : ""}
                 </dd>
-            </dl>
-            <p className="form-disclaimer">
-                This is the status recorded by an authorized account. It does
-                not independently confirm physical rescue operations.
-            </p>
+                </dl>
+                <p className="form-disclaimer">
+                    This is the status recorded by an authorized account. It does
+                    not independently confirm physical rescue operations.
+                </p>
+            </div>
         </div>
     );
 }

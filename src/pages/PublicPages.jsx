@@ -10,6 +10,38 @@ import {
 } from "../components/Controls";
 import { initialPets, organizations, photoUrl } from "../data";
 
+function reportPhoto(report, width = 900) {
+    const photo = report.photo || report.image;
+    if (photo) {
+        return photo.startsWith("data:") ||
+            photo.startsWith("http://") ||
+            photo.startsWith("https://")
+            ? photo
+            : photoUrl(photo, width);
+    }
+    return photoUrl(
+        report.animalType?.toLowerCase() === "cat"
+            ? "photo-1495360010541-f48722b34f7d"
+            : "photo-1516734212186-a967f81ad0d7",
+        width,
+    );
+}
+
+function wasReportAccepted(report) {
+    return (
+        report.assignmentStatus === "Accepted" ||
+        ["Responding", "Rescued", "Completed"].includes(report.status)
+    );
+}
+
+function rescuedDate(report) {
+    if (!report.rescuedAt) return "Date not recorded";
+    const date = new Date(report.rescuedAt);
+    return Number.isNaN(date.getTime())
+        ? "Date not recorded"
+        : date.toLocaleString();
+}
+
 export function HomePage({
     pets,
     orgs = organizations,
@@ -18,6 +50,7 @@ export function HomePage({
     favorites,
     toggleFavorite,
     onDetails,
+    onReportDetails,
     onMessage,
     onAdopt,
     onNavigate,
@@ -161,28 +194,88 @@ export function HomePage({
                             </p>
                         </div>
                     </div>
-                    <div className="content-panel public-report-list">
+                    <div className="home-report-grid">
                         {reports
                             .filter((report) => report.publicDisplay)
                             .slice(0, 4)
-                            .map((report) => (
-                                <div className="activity-row" key={report.id}>
-                                    <span className="dot" />
-                                    <span>
-                                        <b>
-                                            {report.kind} · {report.animalType}
-                                        </b>
-                                        <small>
-                                            {report.place} · {report.date}
-                                        </small>
-                                    </span>
-                                    <span className="public-report-status">
-                                        {report.status === "Responding"
-                                            ? "Responding to a report"
-                                            : report.status}
-                                    </span>
-                                </div>
-                            ))}
+                            .map((report) => {
+                                const assignedOrganization = orgs.find(
+                                    (organization) =>
+                                        organization.id === report.orgId,
+                                );
+                                const hasPhoto = Boolean(
+                                    report.photo || report.image,
+                                );
+
+                                return (
+                                    <article
+                                        className="content-panel home-report-card"
+                                        key={report.id}
+                                    >
+                                        <div className="home-report-image-wrap">
+                                            <img
+                                                src={reportPhoto(report)}
+                                                alt={
+                                                    hasPhoto
+                                                        ? `Animal in ${report.kind.toLowerCase()} report`
+                                                        : `Representative ${report.animalType.toLowerCase()} photo`
+                                                }
+                                            />
+                                            {!hasPhoto && (
+                                                <span>Representative image</span>
+                                            )}
+                                        </div>
+                                        <div className="home-report-card-body">
+                                            <div className="home-report-card-head">
+                                                <span className="kicker">
+                                                    {report.id} · {report.kind}
+                                                </span>
+                                                <StatusBadge
+                                                    status={report.status}
+                                                />
+                                            </div>
+                                            <h3>
+                                                {report.animalType}
+                                                {report.breed
+                                                    ? ` · ${report.breed}`
+                                                    : ""}
+                                            </h3>
+                                            <p>{report.description}</p>
+                                            <dl>
+                                                <dt>Location</dt>
+                                                <dd>{report.place}</dd>
+                                                <dt>Condition</dt>
+                                                <dd>{report.condition}</dd>
+                                                {wasReportAccepted(report) && (
+                                                    <>
+                                                        <dt>Taken by</dt>
+                                                        <dd>
+                                                            {assignedOrganization?.name ||
+                                                                "Organization not listed"}
+                                                        </dd>
+                                                    </>
+                                                )}
+                                                {report.status === "Rescued" && (
+                                                    <>
+                                                        <dt>Rescued update</dt>
+                                                        <dd>
+                                                            {rescuedDate(report)}
+                                                        </dd>
+                                                    </>
+                                                )}
+                                            </dl>
+                                            <button
+                                                className="btn btn-ghost"
+                                                onClick={() =>
+                                                    onReportDetails?.(report)
+                                                }
+                                            >
+                                                View report details
+                                            </button>
+                                        </div>
+                                    </article>
+                                );
+                            })}
                     </div>
                     <p className="form-disclaimer">
                         Statuses are recorded by PawRescue accounts and do not
@@ -511,14 +604,28 @@ export function PublicReportsPage({
     onView,
 }) {
     const [query, setQuery] = useState("");
+    const [filters, setFilters] = useState({
+        kind: "All",
+        animal: "All",
+        status: "All",
+    });
     const approved = reports.filter(
-            (r) => r.approvalStatus === "Approved" && r.publicDisplay,
-        ),
-        filtered = approved.filter((r) =>
-            `${r.kind} ${r.animalType} ${r.breed} ${r.place}`
-                .toLowerCase()
-                .includes(query.toLowerCase()),
+        (report) => report.approvalStatus === "Approved" && report.publicDisplay,
+    );
+    const kinds = [...new Set(approved.map((report) => report.kind))].sort();
+    const animals = [...new Set(approved.map((report) => report.animalType))].sort();
+    const statuses = [...new Set(approved.map((report) => report.status))].sort();
+    const filtered = approved.filter((report) => {
+        const matchesSearch = `${report.kind} ${report.animalType} ${report.breed} ${report.place}`
+            .toLowerCase()
+            .includes(query.toLowerCase());
+        return (
+            matchesSearch &&
+            (filters.kind === "All" || report.kind === filters.kind) &&
+            (filters.animal === "All" || report.animalType === filters.animal) &&
+            (filters.status === "All" || report.status === filters.status)
         );
+    });
     return (
         <main className="page-shell">
             <PageIntro
@@ -538,27 +645,73 @@ export function PublicReportsPage({
                     </div>
                 }
             />
+            <div className="public-report-filters">
+                <label>
+                    <span>Report type</span>
+                    <select
+                        value={filters.kind}
+                        onChange={(event) =>
+                            setFilters({ ...filters, kind: event.target.value })
+                        }
+                    >
+                        <option value="All">All report types</option>
+                        {kinds.map((kind) => (
+                            <option key={kind} value={kind}>
+                                {kind}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    <span>Animal</span>
+                    <select
+                        value={filters.animal}
+                        onChange={(event) =>
+                            setFilters({ ...filters, animal: event.target.value })
+                        }
+                    >
+                        <option value="All">All animals</option>
+                        {animals.map((animal) => (
+                            <option key={animal} value={animal}>
+                                {animal}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    <span>Status</span>
+                    <select
+                        value={filters.status}
+                        onChange={(event) =>
+                            setFilters({ ...filters, status: event.target.value })
+                        }
+                    >
+                        <option value="All">All statuses</option>
+                        {statuses.map((status) => (
+                            <option key={status} value={status}>
+                                {status}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <button
+                    className="btn btn-ghost public-report-reset"
+                    onClick={() => {
+                        setQuery("");
+                        setFilters({ kind: "All", animal: "All", status: "All" });
+                    }}
+                >
+                    Reset filters
+                </button>
+            </div>
             {filtered.length ? (
                 <div className="public-cases">
                     {filtered.map((report) => {
                         const uploadedPhoto = report.photo || report.image;
-                        const fallbackPhoto = photoUrl(
-                            report.animalType?.toLowerCase() === "cat"
-                                ? "photo-1514888286974-6c03e2ca1dba"
-                                : "photo-1543466835-00a7907e9de1",
-                            900,
-                        );
                         const assignedOrganization = orgs.find(
                             (organization) => organization.id === report.orgId,
                         );
-                        const takenByOrganization =
-                            report.assignmentStatus === "Accepted" ||
-                            ["Responding", "Rescued", "Completed"].includes(
-                                report.status,
-                            );
-                        const rescuedDate = report.rescuedAt
-                            ? new Date(report.rescuedAt).toLocaleString()
-                            : "Date not recorded";
+                        const takenByOrganization = wasReportAccepted(report);
 
                         return (
                             <article
@@ -583,7 +736,7 @@ export function PublicReportsPage({
                                 <div className="public-report-image-wrap">
                                     <img
                                         className="public-report-photo"
-                                        src={uploadedPhoto || fallbackPhoto}
+                                        src={reportPhoto(report)}
                                         alt={
                                             uploadedPhoto
                                                 ? `Animal in ${report.kind.toLowerCase()} report`
@@ -615,7 +768,7 @@ export function PublicReportsPage({
                                     {report.status === "Rescued" && (
                                         <>
                                             <dt>Rescued update</dt>
-                                            <dd>{rescuedDate}</dd>
+                                            <dd>{rescuedDate(report)}</dd>
                                         </>
                                     )}
                                 </dl>
@@ -631,10 +784,14 @@ export function PublicReportsPage({
                 </div>
             ) : (
                 <EmptyState
-                    title="No approved reports found"
+                    title={
+                        approved.length
+                            ? "No reports match these filters"
+                            : "No approved reports found"
+                    }
                     text={
-                        query
-                            ? "Try a different search term."
+                        approved.length
+                            ? "Try another search or reset the filters."
                             : "Approved public animal reports will appear here."
                     }
                 />
@@ -693,31 +850,59 @@ export function AboutPage() {
                         learn about an animal and the organization’s adoption
                         process.
                     </p>
-                    <div className="about-values">
-                        <article>
-                            <b>Share useful details</b>
-                            <span>
-                                Location, condition, and clear notes help
-                                organizations review a report.
-                            </span>
-                        </article>
-                        <article>
-                            <b>Connect locally</b>
-                            <span>
-                                Find organization contact information and
-                                message participating teams.
-                            </span>
-                        </article>
-                        <article>
-                            <b>Adopt with care</b>
-                            <span>
-                                Learn about an animal and contact the
-                                organization before making plans.
-                            </span>
-                        </article>
-                    </div>
+                    <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                            document
+                                .getElementById("about-actions")
+                                ?.scrollIntoView({ behavior: "smooth" })
+                        }
+                    >
+                        Explore ways to help <ArrowRight size={15} />
+                    </button>
                 </div>
             </div>
+            <section className="about-actions-section" id="about-actions">
+                <div className="section-head">
+                    <div>
+                        <div className="kicker">Get involved</div>
+                        <h2>Small steps make a difference</h2>
+                        <p>Choose a simple way to support animals in your community.</p>
+                    </div>
+                </div>
+                <div className="feature-row">
+                    <article className="feature">
+                        <div className="feature-icon">📍</div>
+                        <div>
+                            <h3>Share a report</h3>
+                            <p>
+                                Add a clear description and location so nearby
+                                organizations can review what happened.
+                            </p>
+                        </div>
+                    </article>
+                    <article className="feature">
+                        <div className="feature-icon">🏠</div>
+                        <div>
+                            <h3>Connect with a shelter</h3>
+                            <p>
+                                Browse organization details, services, and
+                                contact information in the directory.
+                            </p>
+                        </div>
+                    </article>
+                    <article className="feature">
+                        <div className="feature-icon">♡</div>
+                        <div>
+                            <h3>Adopt thoughtfully</h3>
+                            <p>
+                                Read each animal’s information and contact the
+                                organization about its adoption process.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+            </section>
         </main>
     );
 }
